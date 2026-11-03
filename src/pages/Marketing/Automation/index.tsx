@@ -167,7 +167,7 @@ export default function AutomationPage() {
       render: (value: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{record.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.id}</div>
         </div>
       ),
     },
@@ -206,7 +206,7 @@ export default function AutomationPage() {
           <Tag color={triggerTypeMeta[record.triggerType].color}>
             {triggerTypeMeta[record.triggerType].label}
           </Tag>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{record.triggerRule}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.triggerRule}</div>
         </div>
       ),
     },

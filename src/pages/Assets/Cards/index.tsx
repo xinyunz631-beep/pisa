@@ -208,7 +208,7 @@ export default function CardsPage() {
       render: (value: string, coupon) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{coupon.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{coupon.id}</div>
         </div>
       ),
     },
@@ -234,7 +234,7 @@ export default function CardsPage() {
       dataIndex: 'validFrom',
       width: 200,
       render: (_value: string, coupon) => (
-        <span style={{ color: 'rgba(0,0,0,0.65)' }}>
+        <span style={{ color: 'var(--text-secondary)' }}>
           {coupon.validFrom} ~ {coupon.validTo}
         </span>
       ),

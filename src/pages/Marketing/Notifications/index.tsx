@@ -165,7 +165,7 @@ export default function NotificationsPage() {
       render: (value: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{record.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.id}</div>
         </div>
       ),
     },
@@ -198,7 +198,7 @@ export default function NotificationsPage() {
       dataIndex: 'summary',
       width: 280,
       ellipsis: true,
-      render: (value: string) => <span style={{ color: 'rgba(0,0,0,0.65)' }}>{value}</span>,
+      render: (value: string) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>,
     },
     {
       title: '发送量',
@@ -434,7 +434,7 @@ export default function NotificationsPage() {
                   padding: 16,
                   lineHeight: 1.8,
                   whiteSpace: 'pre-wrap',
-                  color: 'rgba(0,0,0,0.72)',
+                  color: 'var(--text-strong)',
                 }}
               >
                 {preview.content}

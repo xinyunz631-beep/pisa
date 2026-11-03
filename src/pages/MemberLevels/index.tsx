@@ -113,7 +113,7 @@ export default function MemberLevelsPage() {
       render: (_, level) => (
         <Space direction="vertical" size={0}>
           <span>{renderCondition(level)}</span>
-          <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             {upgradeTypeMeta[level.upgradeType]}
           </span>
         </Space>

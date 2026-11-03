@@ -166,7 +166,7 @@ export default function PackagesPage() {
       render: (value: string, item) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{item.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.id}</div>
         </div>
       ),
     },
@@ -196,7 +196,7 @@ export default function PackagesPage() {
       dataIndex: 'validFrom',
       width: 200,
       render: (_value: string, item) => (
-        <span style={{ color: 'rgba(0,0,0,0.65)' }}>
+        <span style={{ color: 'var(--text-secondary)' }}>
           {item.validFrom} ~ {item.validTo}
         </span>
       ),

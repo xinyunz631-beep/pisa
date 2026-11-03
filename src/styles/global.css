@@ -1,3 +1,22 @@
+/* 主题变量：浅色 / 夜间由 <html data-theme> 切换 */
+:root {
+  --page-bg: #f5f6f8;
+  --panel-bg: #ffffff;
+  --border-color: #f0f0f0;
+  --text-strong: rgba(0, 0, 0, 0.88);
+  --text-secondary: rgba(0, 0, 0, 0.45);
+  --text-tertiary: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme='dark'] {
+  --page-bg: #000000;
+  --panel-bg: #141414;
+  --border-color: #303030;
+  --text-strong: rgba(255, 255, 255, 0.88);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.3);
+}
+
 *,
 *::before,
 *::after {
@@ -15,7 +34,8 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
     'Helvetica Neue', Arial, sans-serif;
-  background: #f5f6f8;
+  background: var(--page-bg);
+  color: var(--text-strong);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -41,8 +61,12 @@ body {
 
 .page-header p {
   margin: 4px 0 0;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
   font-size: 13px;
+}
+
+.page-header h2 {
+  color: var(--text-strong);
 }
 
 .kpi-grid {
@@ -125,4 +149,35 @@ body {
     justify-content: flex-start;
     overflow: hidden;
   }
+}
+
+/* 夜间模式下的菜单细节：背景透明、选中项仅主色文字/浅色底 */
+.top-nav.ant-menu-dark,
+.top-nav.ant-menu-dark .ant-menu-item,
+.top-nav.ant-menu-dark .ant-menu-submenu-title {
+  background: transparent !important;
+}
+
+.top-nav.ant-menu-dark > .ant-menu-item-selected {
+  background: transparent !important;
+  color: #ff7875 !important;
+  font-weight: 600;
+}
+
+.top-nav.ant-menu-dark > .ant-menu-item-selected .anticon {
+  color: #ff7875 !important;
+}
+
+.ant-layout-sider .ant-menu-dark,
+.ant-layout-sider .ant-menu-dark .ant-menu-item {
+  background: transparent !important;
+}
+
+.ant-layout-sider .ant-menu-dark .ant-menu-item-selected {
+  background: rgba(212, 56, 13, 0.22) !important;
+  color: #ff7875 !important;
+}
+
+.ant-layout-sider .ant-menu-dark .ant-menu-item-selected .anticon {
+  color: #ff7875 !important;
 }

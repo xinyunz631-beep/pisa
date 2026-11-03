@@ -82,7 +82,7 @@ export default function OrdersPage() {
       title: '桌号',
       dataIndex: 'tableNo',
       width: 80,
-      render: (value?: string) => value ?? <span style={{ color: 'rgba(0,0,0,0.25)' }}>—</span>,
+      render: (value?: string) => value ?? <span style={{ color: 'var(--text-tertiary)' }}>—</span>,
     },
     { title: '客户', dataIndex: 'customer', width: 100 },
     {

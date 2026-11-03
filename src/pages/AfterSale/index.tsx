@@ -271,7 +271,7 @@ export default function AfterSalePage() {
                   {afterSaleStatusMeta[detail.status].label}
                 </Tag>
                 {!canAudit && (
-                  <span style={{ marginLeft: 8, color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+                  <span style={{ marginLeft: 8, color: 'var(--text-secondary)', fontSize: 12 }}>
                     该工单已处理完成，无需重复操作
                   </span>
                 )}
@@ -327,7 +327,7 @@ export default function AfterSalePage() {
                   children: (
                     <div>
                       <div style={{ fontWeight: 500 }}>{record.action}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                         {record.time} · {record.operator}
                       </div>
                     </div>

@@ -146,7 +146,7 @@ export default function MemberTagsPage() {
       title: '打标条件',
       key: 'conditions',
       render: (_, tag) => (
-        <span style={{ color: tag.type === 'manual' ? 'rgba(0,0,0,0.45)' : undefined }}>
+        <span style={{ color: tag.type === 'manual' ? 'var(--text-secondary)' : undefined }}>
           {conditionText(tag)}
         </span>
       ),

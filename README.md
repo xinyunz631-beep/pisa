@@ -27,6 +27,7 @@ npm run build    # 类型检查 + 生产构建
 ```
 src/
 ├── config/nav.tsx        # 导航唯一配置：6 大模块 + 每个模块的二级菜单 + 路由
+├── theme.tsx             # 浅色 / 夜间主题（localStorage 持久化 + 跟随系统）
 ├── layouts/AdminLayout.tsx  # 顶部横排模块菜单 / 左侧二级菜单 / 内容区
 ├── pages/
 │   ├── Members/          # 会员信息
@@ -60,6 +61,13 @@ src/
 | 业务 | 菜品管理、菜单管理、门店管理、配送管理 |
 | 订单 | 订单查询、售后处理 |
 | 系统 | 岗位管理、人员管理、系统日志 |
+
+## 夜间模式
+
+- 入口：右上角**头像下拉菜单 → 夜间模式**（带勾选状态）
+- 实现：AntD `darkAlgorithm` 全局切换 + CSS 变量（`--page-bg` / `--panel-bg` / `--border-color` / 文本色）同步变色
+- 持久化：选择写入 `localStorage`（key `bisas-theme`）；首次进入跟随系统 `prefers-color-scheme`
+- 首屏防闪烁：`index.html` 内联脚本在 React 挂载前先设置 `<html data-theme>`
 
 ## Mock 数据的边界
 

@@ -151,7 +151,7 @@ export default function DeliveryPage() {
       render: (value: string, rule) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{rule.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{rule.id}</div>
         </div>
       ),
     },

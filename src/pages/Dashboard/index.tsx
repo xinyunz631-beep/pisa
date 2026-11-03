@@ -78,7 +78,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="dashboard-row">
-        <Card title="近 7 日营业额趋势" extra={<span style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>单位：元</span>}>
+        <Card title="近 7 日营业额趋势" extra={<span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>单位：元</span>}>
           <TrendChart data={data.trend} />
         </Card>
 
@@ -96,7 +96,7 @@ export default function DashboardPage() {
                   fontSize: 12,
                   fontWeight: 600,
                   background: index < 3 ? '#fff1eb' : '#f5f5f5',
-                  color: index < 3 ? '#d4380d' : 'rgba(0,0,0,0.45)',
+                  color: index < 3 ? '#d4380d' : 'var(--text-secondary)',
                 }}
               >
                 {index + 1}

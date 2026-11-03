@@ -53,7 +53,7 @@ const recordTypeOptions: Array<{ label: string; value: PointRecordType | 'all' }
 const recordTypeColor: Record<PointRecordType, string> = {
   earn: '#389e0d',
   spend: '#d4380d',
-  expire: 'rgba(0,0,0,0.45)',
+  expire: 'var(--text-secondary)',
 };
 
 interface PointRuleFormValues {
@@ -180,7 +180,7 @@ export default function PointsPage() {
       render: (value: string, rule) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{rule.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{rule.id}</div>
         </div>
       ),
     },

@@ -149,7 +149,7 @@ export default function MenusPage() {
       render: (value: string, menu) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{menu.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{menu.id}</div>
         </div>
       ),
     },

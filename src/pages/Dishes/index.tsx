@@ -127,7 +127,7 @@ export default function DishesPage() {
       render: (value: string, dish) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{dish.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{dish.id}</div>
         </div>
       ),
     },
@@ -144,7 +144,7 @@ export default function DishesPage() {
       dataIndex: 'cost',
       width: 100,
       align: 'right',
-      render: (value: number) => <span style={{ color: 'rgba(0,0,0,0.45)' }}>{money(value)}</span>,
+      render: (value: number) => <span style={{ color: 'var(--text-secondary)' }}>{money(value)}</span>,
     },
     {
       title: '毛利率',

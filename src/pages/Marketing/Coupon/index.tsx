@@ -145,7 +145,7 @@ export default function CouponPage() {
       render: (value: string, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>{record.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{record.id}</div>
         </div>
       ),
     },
@@ -201,7 +201,7 @@ export default function CouponPage() {
       render: (_, record) => (
         <div style={{ fontSize: 12, lineHeight: 1.7 }}>
           <div>{record.validFrom}</div>
-          <div style={{ color: 'rgba(0,0,0,0.45)' }}>至 {record.validTo}</div>
+          <div style={{ color: 'var(--text-secondary)' }}>至 {record.validTo}</div>
         </div>
       ),
     },

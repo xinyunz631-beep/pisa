@@ -12,8 +12,9 @@ import {
   Space,
   Spin,
 } from 'antd';
-import { BellOutlined, ShopOutlined } from '@ant-design/icons';
+import { BellOutlined, CheckOutlined, ShopOutlined } from '@ant-design/icons';
 import { defaultPath, findChild, findModule, modules } from '../config/nav';
+import { useTheme } from '../theme';
 import { fetchStoreOptions } from '../services/dashboard';
 
 const { Header, Sider, Content } = Layout;
@@ -31,6 +32,8 @@ export default function AdminLayout() {
   const [storeId, setStoreId] = useState<string>();
   const location = useLocation();
   const navigate = useNavigate();
+  const { mode, toggle } = useTheme();
+  const dark = mode === 'dark';
 
   const activeModule = findModule(location.pathname);
   const activeChild = findChild(location.pathname);
@@ -50,8 +53,8 @@ export default function AdminLayout() {
         style={{
           height: 64,
           padding: '0 20px',
-          background: '#fff',
-          borderBottom: '1px solid #f0f0f0',
+          background: 'var(--panel-bg)',
+          borderBottom: '1px solid var(--border-color)',
           position: 'sticky',
           top: 0,
           zIndex: 20,
@@ -78,13 +81,14 @@ export default function AdminLayout() {
           </div>
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>比萨斯</div>
-            <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.45)' }}>连锁餐饮 SaaS</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>连锁餐饮 SaaS</div>
           </div>
         </div>
 
         <Menu
           className="top-nav"
           mode="horizontal"
+          theme={dark ? 'dark' : 'light'}
             selectedKeys={activeModule ? [activeModule.path] : []}
             items={modules.map((mod) => ({ key: mod.path, icon: mod.icon, label: mod.label }))}
           onClick={({ key }) => {
@@ -112,8 +116,14 @@ export default function AdminLayout() {
             menu={{
               items: [
                 { key: 'profile', label: '个人资料' },
+                { type: 'divider' },
+                { key: 'theme', label: '夜间模式', extra: dark ? <CheckOutlined /> : null },
+                { type: 'divider' },
                 { key: 'logout', label: '退出登录' },
               ],
+              onClick: ({ key }) => {
+                if (key === 'theme') toggle();
+              },
             }}
           >
             <Space style={{ cursor: 'pointer' }}>
@@ -132,7 +142,8 @@ export default function AdminLayout() {
             theme="light"
             width={200}
             style={{
-              borderRight: '1px solid #f0f0f0',
+              background: 'var(--panel-bg)',
+              borderRight: '1px solid var(--border-color)',
               position: 'sticky',
               top: 64,
               height: 'calc(100vh - 64px)',
@@ -140,6 +151,7 @@ export default function AdminLayout() {
           >
             <Menu
               mode="inline"
+              theme={dark ? 'dark' : 'light'}
               selectedKeys={activeChild ? [activeChild.path] : []}
               items={sidebarItems.map((child) => ({
                 key: child.path,
