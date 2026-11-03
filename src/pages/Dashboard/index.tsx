@@ -60,7 +60,7 @@ export default function DashboardPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>经营概览</h2>
+          <h2>仪表盘</h2>
           <p>2026-11-04 · 全部门店 · 数据每 5 分钟刷新（当前为 Mock 数据）</p>
         </div>
         <Space>
@@ -95,7 +95,7 @@ export default function DashboardPage() {
                   placeItems: 'center',
                   fontSize: 12,
                   fontWeight: 600,
-                  background: index < 3 ? '#fff1eb' : '#f5f5f5',
+                  background: index < 3 ? 'rgba(212,56,13,0.15)' : 'var(--border-color)',
                   color: index < 3 ? '#d4380d' : 'var(--text-secondary)',
                 }}
               >

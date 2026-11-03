@@ -2,6 +2,8 @@ import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import {
   AppstoreOutlined,
+  BarChartOutlined,
+  DashboardOutlined,
   CarOutlined,
   CoffeeOutlined,
   CreditCardOutlined,
@@ -33,6 +35,7 @@ import {
  * 导航配置 = 顶部 6 大模块 + 左侧二级菜单 + 路由的唯一来源。
  * 模块顺序：会员 / 营销 / 资产 / 业务 / 订单 / 系统。
  */
+const DashboardPage = lazy(() => import('../pages/Dashboard'));
 const MembersPage = lazy(() => import('../pages/Members'));
 const MemberLevelsPage = lazy(() => import('../pages/MemberLevels'));
 const MemberTagsPage = lazy(() => import('../pages/MemberTags'));
@@ -71,6 +74,19 @@ export interface NavModule {
 }
 
 export const modules: NavModule[] = [
+  {
+    path: '/data',
+    label: '数据',
+    icon: <BarChartOutlined />,
+    children: [
+      {
+        path: '/data/dashboard',
+        label: '仪表盘',
+        icon: <DashboardOutlined />,
+        component: DashboardPage,
+      },
+    ],
+  },
   {
     path: '/members',
     label: '会员',

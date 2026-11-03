@@ -181,3 +181,21 @@ body {
 .ant-layout-sider .ant-menu-dark .ant-menu-item-selected .anticon {
   color: #ff7875 !important;
 }
+
+/* 仪表盘 SVG 图表跟随主题 */
+.trend-grid {
+  stroke: var(--border-color);
+}
+
+.trend-axis {
+  fill: var(--text-secondary);
+}
+
+.trend-dot {
+  fill: var(--panel-bg);
+}
+
+/* 顶部模块增加到 7 个，收紧水平菜单项间距，保证居中时不挤到右侧操作区 */
+.top-nav.ant-menu-horizontal > .ant-menu-item {
+  padding-inline: 12px;
+}

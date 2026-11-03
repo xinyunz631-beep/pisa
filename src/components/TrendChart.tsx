@@ -7,7 +7,7 @@ interface Props {
 
 const W = 720;
 const H = 260;
-const PAD = { top: 20, right: 20, bottom: 42, left: 56 };
+const PAD = { top: 20, right: 48, bottom: 42, left: 56 };
 
 /** 无依赖的 SVG 面积折线图（原型阶段避免引入图表库）。 */
 export default function TrendChart({ data }: Props) {
@@ -36,6 +36,7 @@ export default function TrendChart({ data }: Props) {
     <svg
       viewBox={`0 0 ${W} ${H}`}
       style={{ width: '100%', height: 'auto' }}
+      className="trend-chart"
       role="img"
       aria-label="近 7 日营业额趋势"
     >
@@ -53,10 +54,10 @@ export default function TrendChart({ data }: Props) {
             x2={W - PAD.right}
             y1={y}
             y2={y}
-            stroke="#f0f0f0"
+            className="trend-grid"
             strokeDasharray={i === ticks ? '0' : '4 4'}
           />
-          <text x={PAD.left - 10} y={y + 4} textAnchor="end" fontSize="11" fill="rgba(0,0,0,0.45)">
+          <text className="trend-axis" x={PAD.left - 10} y={y + 4} textAnchor="end" fontSize="11">
             {compactMoney(Math.round(gridValue(i)))}
           </text>
         </g>
@@ -67,12 +68,12 @@ export default function TrendChart({ data }: Props) {
 
       {points.map((p) => (
         <g key={p.label}>
-          <circle cx={p.x} cy={p.y} r="4" fill="#fff" stroke="#d4380d" strokeWidth="2.5">
+          <circle className="trend-dot" cx={p.x} cy={p.y} r="4" stroke="#d4380d" strokeWidth="2.5">
             <title>
               {p.label}：{money(p.value)}
             </title>
           </circle>
-          <text x={p.x} y={H - 16} textAnchor="middle" fontSize="11" fill="rgba(0,0,0,0.45)">
+          <text className="trend-axis" x={p.x} y={H - 16} textAnchor="middle" fontSize="11">
             {p.label}
           </text>
         </g>
