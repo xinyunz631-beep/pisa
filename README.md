@@ -116,6 +116,22 @@ src/
 
 20 个页面由 Lead + 4 个智能体队员并行完成：营销 5 页、资产 3 页、业务 3 页、售后+系统 4 页各自独立目录与 Mock/Service 层，Lead 负责导航、会员 3 页、公共约定、集成与验收（`tsc`、`vite build`、20 条路由无头渲染检查、截图）。
 
+## 接口契约文档（给后端）
+
+前端 Mock 的入参/出参已反推成完整的后端接口契约，放在 [`docs/api/`](./docs/api/README.md)：
+
+- [README.md](./docs/api/README.md)：通用约定（Base URL、统一响应、分页、字段类型、错误码、跨模块公共接口）
+- [01-dashboard.md](./docs/api/01-dashboard.md) 数据 / 仪表盘
+- [02-member.md](./docs/api/02-member.md) 会员（会员信息、等级配置、标签管理）
+- [03-marketing.md](./docs/api/03-marketing.md) 营销（满减/满折/发券/自动化/通知）
+- [04-assets.md](./docs/api/04-assets.md) 资产（卡券/积分/券包）
+- [05-business.md](./docs/api/05-business.md) 业务（菜单/门店/配送）
+- [06-dish.md](./docs/api/06-dish.md) 菜品
+- [07-order.md](./docs/api/07-order.md) 订单查询
+- [08-ops.md](./docs/api/08-ops.md) 售后处理 + 系统（岗位/人员/日志）
+
+接入真实后端时只需替换 `src/services/*` 的实现（保持函数签名），页面代码零改动。
+
 ## 下一步
 
 见 [PLAN.md](./PLAN.md)。
