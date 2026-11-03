@@ -64,21 +64,17 @@ export default function AdminLayout() {
           onClick={() => navigate(defaultPath(modules[0]))}
           style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}
         >
+          {/* Logo 占位：只保留矩形容器，等正式 Logo 图片替换 */}
           <div
+            aria-label="比萨斯 Logo"
             style={{
               width: 32,
               height: 32,
               borderRadius: 8,
               background: '#d4380d',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontWeight: 700,
-              fontSize: 16,
+              flexShrink: 0,
             }}
-          >
-            比
-          </div>
+          />
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>比萨斯</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>连锁餐饮 SaaS</div>
