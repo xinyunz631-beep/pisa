@@ -46,14 +46,12 @@ export default function AdminLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header
+        className="app-header"
         style={{
           height: 64,
           padding: '0 20px',
           background: '#fff',
           borderBottom: '1px solid #f0f0f0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 24,
           position: 'sticky',
           top: 0,
           zIndex: 20,
@@ -85,17 +83,18 @@ export default function AdminLayout() {
         </div>
 
         <Menu
+          className="top-nav"
           mode="horizontal"
-          selectedKeys={activeModule ? [activeModule.path] : []}
-          items={modules.map((mod) => ({ key: mod.path, icon: mod.icon, label: mod.label }))}
+            selectedKeys={activeModule ? [activeModule.path] : []}
+            items={modules.map((mod) => ({ key: mod.path, icon: mod.icon, label: mod.label }))}
           onClick={({ key }) => {
             const target = modules.find((mod) => mod.path === key);
             if (target) navigate(defaultPath(target));
           }}
-          style={{ flex: 1, minWidth: 0, borderBottom: 'none' }}
+          style={{ borderBottom: 'none' }}
         />
 
-        <Space size={16} style={{ flexShrink: 0 }}>
+        <Space size={16} style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <Select
             showSearch
             optionFilterProp="label"

@@ -74,3 +74,55 @@ body {
 .page .ant-card-body {
   padding: 16px;
 }
+
+/* 顶栏：左右两列等宽，导航在整页水平居中 */
+.app-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+}
+
+/* 选中态去掉下划线，只保留主色文字 */
+.top-nav.ant-menu-horizontal {
+  border-bottom: none !important;
+  justify-content: center;
+}
+
+.top-nav.ant-menu-horizontal > .ant-menu-item::after,
+.top-nav.ant-menu-horizontal > .ant-menu-item-selected::after,
+.top-nav.ant-menu-horizontal > .ant-menu-submenu::after,
+.top-nav.ant-menu-horizontal > .ant-menu-submenu-selected::after {
+  display: none !important;
+  border-bottom: none !important;
+}
+
+.top-nav.ant-menu-horizontal > .ant-menu-item,
+.top-nav.ant-menu-horizontal > .ant-menu-submenu {
+  border-bottom: none !important;
+}
+
+.top-nav.ant-menu-horizontal > .ant-menu-item-selected {
+  color: #d4380d !important;
+  font-weight: 600;
+}
+
+.top-nav.ant-menu-horizontal > .ant-menu-item-selected .anticon,
+.top-nav.ant-menu-horizontal > .ant-menu-item-selected a {
+  color: #d4380d !important;
+}
+
+/* 中窄屏降级为普通 flex 排列，避免压住右侧操作区 */
+@media (max-width: 1399px) {
+  .app-header {
+    display: flex;
+    gap: 16px;
+  }
+
+  .top-nav.ant-menu-horizontal {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+}
