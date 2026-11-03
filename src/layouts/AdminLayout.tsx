@@ -153,7 +153,7 @@ export default function AdminLayout() {
           </Sider>
         )}
 
-        <Content style={{ padding: '16px 20px', minWidth: 0 }}>
+        <Content style={{ padding: '16px', minWidth: 0 }}>
           <Breadcrumb
             items={[
               { title: activeModule?.label ?? '比萨斯' },

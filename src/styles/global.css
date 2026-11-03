@@ -69,3 +69,8 @@ body {
   min-height: 100vh;
   background: linear-gradient(135deg, #fff1eb 0%, #f5f6f8 60%);
 }
+
+/* 内容区更紧凑：让 8~9 列的表格在 1440 宽屏里尽量不出现横向滚动 */
+.page .ant-card-body {
+  padding: 16px;
+}

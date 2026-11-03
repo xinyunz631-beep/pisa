@@ -13,7 +13,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { fetchMembers, fetchMemberLevels } from '../../services/member';
+import { fetchMembers, fetchMemberLevelNames } from '../../services/member';
 import type { Member, Paged } from '../../types';
 import { memberLevelMeta, memberStatusMeta, money } from '../../utils/format';
 
@@ -47,7 +47,7 @@ export default function MembersPage() {
   }, [load]);
 
   useEffect(() => {
-    void fetchMemberLevels().then(setLevels);
+    void fetchMemberLevelNames().then(setLevels);
   }, []);
 
   const search = (value: string) => {

@@ -94,3 +94,43 @@ export interface Member {
   tags: string[];
   status: MemberStatus;
 }
+
+/** 等级升级判定方式：累计消费金额 / 消费频次 / 满足任一。 */
+export type LevelUpgradeType = 'amount' | 'frequency' | 'either';
+
+export interface MemberLevelConfig {
+  id: string;
+  name: string;
+  order: number;
+  upgradeType: LevelUpgradeType;
+  minAmount: number;
+  minFrequency: number;
+  /** 会员折扣，10 表示不打折。 */
+  discount: number;
+  /** 积分倍率。 */
+  pointsRate: number;
+  memberCount: number;
+  description: string;
+}
+
+export type TagCategory = '人群价值' | '行为' | '人口属性';
+export type TagType = 'auto' | 'manual';
+export type TagStatus = 'enabled' | 'disabled';
+
+export interface TagCondition {
+  field: string;
+  operator: string;
+  value: string;
+}
+
+export interface MemberTagConfig {
+  id: string;
+  name: string;
+  category: TagCategory;
+  type: TagType;
+  conditions: TagCondition[];
+  updateFrequency: 'daily' | 'weekly' | 'manual';
+  coverage: number;
+  updatedAt: string;
+  status: TagStatus;
+}

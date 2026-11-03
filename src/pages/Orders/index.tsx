@@ -118,7 +118,7 @@ export default function OrdersPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>订单管理</h2>
+          <h2>订单查询</h2>
           <p>共 {data.total} 笔订单，支持门店 / 渠道 / 状态 / 日期筛选（Mock 数据）</p>
         </div>
         <Button icon={<ReloadOutlined />} onClick={() => void load()}>
