@@ -76,3 +76,21 @@ export interface StoreRank {
   turnover: number;
   orders: number;
 }
+
+export type MemberStatus = 'active' | 'frozen';
+
+export interface Member {
+  id: string;
+  memberNo: string;
+  nickname: string;
+  phone: string;
+  level: string;
+  points: number;
+  totalSpent: number;
+  orderCount: number;
+  lastVisit: string;
+  joinedAt: string;
+  birthday: string;
+  tags: string[];
+  status: MemberStatus;
+}

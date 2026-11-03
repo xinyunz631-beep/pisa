@@ -1,4 +1,4 @@
-import type { DishStatus, OrderChannel, OrderStatus, StoreStatus } from '../types';
+import type { DishStatus, MemberStatus, OrderChannel, OrderStatus, StoreStatus } from '../types';
 
 export function money(value: number): string {
   return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`;
@@ -31,4 +31,16 @@ export const storeStatusMeta: Record<StoreStatus, { label: string; color: string
 export const dishStatusMeta: Record<DishStatus, { label: string; color: string }> = {
   on: { label: '在售', color: 'green' },
   off: { label: '已下架', color: 'default' },
+};
+
+export const memberLevelMeta: Record<string, { label: string; color: string }> = {
+  普通会员: { label: '普通会员', color: 'default' },
+  银卡会员: { label: '银卡会员', color: 'blue' },
+  金卡会员: { label: '金卡会员', color: 'gold' },
+  黑卡会员: { label: '黑卡会员', color: 'purple' },
+};
+
+export const memberStatusMeta: Record<MemberStatus, { label: string; color: string }> = {
+  active: { label: '正常', color: 'green' },
+  frozen: { label: '已冻结', color: 'red' },
 };
