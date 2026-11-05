@@ -1,0 +1,181 @@
+openapi: 3.0.3
+info:
+  title: 比萨斯 · 连锁餐饮 SaaS 管理后台 API
+  version: 1.0.0
+  description: |
+    本规范由前端 Mock（`src/mock/*` + `src/services/*`）反推而来，与 `docs/api/*.md` 契约文档一一对应，供后端实现与联调使用。
+
+    - 通用约定（响应包裹、分页、字段类型、错误码、跨模块引用）见 [docs/api/README.md](../README.md)
+    - 各模块明细见 `docs/api/01-dashboard.md` ~ `08-ops.md`
+    - 本文件只做组织与索引，具体路径定义在 `paths/*.yaml`，数据模型在 `schemas/*.yaml`
+
+    约定：统一响应 `{ code, message, data }`；分页 `{ list, total, page, pageSize }`；状态变更 `PATCH /{resource}/{id}/status`。
+servers:
+  - url: https://api.example.com/api/v1
+    description: 生产环境（占位）
+  - url: http://localhost:3000/api/v1
+    description: 本地联调
+tags:
+  - name: 数据
+    description: 仪表盘、门店下拉
+  - name: 会员
+    description: 会员信息、等级配置、标签管理
+  - name: 营销
+    description: 满减、满折、发券、自动化营销、消息通知
+  - name: 资产
+    description: 卡券、积分、券包
+  - name: 业务
+    description: 菜单、门店、配送
+  - name: 菜品
+    description: 菜品管理
+  - name: 订单
+    description: 订单查询
+  - name: 售后
+    description: 售后处理
+  - name: 系统
+    description: 岗位、人员、系统日志
+security:
+  - bearerAuth: []
+paths:
+  # ---------- 数据 ----------
+  /api/v1/dashboard/summary:
+    $ref: './paths/dashboard.yaml#/dashboard-summary'
+  /api/v1/stores/options:
+    $ref: './paths/dashboard.yaml#/stores-options'
+
+  # ---------- 会员 ----------
+  /api/v1/members:
+    $ref: './paths/member.yaml#/members'
+  /api/v1/members/levels:
+    $ref: './paths/member.yaml#/members-levels'
+  /api/v1/member-levels:
+    $ref: './paths/member.yaml#/member-levels'
+  /api/v1/member-levels/{id}:
+    $ref: './paths/member.yaml#/member-levels-id'
+  /api/v1/member-tags:
+    $ref: './paths/member.yaml#/member-tags'
+  /api/v1/member-tags/{id}:
+    $ref: './paths/member.yaml#/member-tags-id'
+  /api/v1/member-tags/{id}/status:
+    $ref: './paths/member.yaml#/member-tags-id-status'
+  /api/v1/member-tags/condition-fields:
+    $ref: './paths/member.yaml#/member-tags-condition-fields'
+
+  # ---------- 营销 ----------
+  /api/v1/marketing/full-reductions:
+    $ref: './paths/marketing.yaml#/full-reductions'
+  /api/v1/marketing/full-reductions/{id}:
+    $ref: './paths/marketing.yaml#/full-reductions-id'
+  /api/v1/marketing/full-reductions/{id}/status:
+    $ref: './paths/marketing.yaml#/full-reductions-id-status'
+  /api/v1/marketing/full-discounts:
+    $ref: './paths/marketing.yaml#/full-discounts'
+  /api/v1/marketing/full-discounts/{id}:
+    $ref: './paths/marketing.yaml#/full-discounts-id'
+  /api/v1/marketing/full-discounts/{id}/status:
+    $ref: './paths/marketing.yaml#/full-discounts-id-status'
+  /api/v1/marketing/coupon-tasks:
+    $ref: './paths/marketing.yaml#/coupon-tasks'
+  /api/v1/marketing/coupon-tasks/{id}:
+    $ref: './paths/marketing.yaml#/coupon-tasks-id'
+  /api/v1/marketing/automation-plans:
+    $ref: './paths/marketing.yaml#/automation-plans'
+  /api/v1/marketing/automation-plans/{id}:
+    $ref: './paths/marketing.yaml#/automation-plans-id'
+  /api/v1/marketing/automation-plans/{id}/status:
+    $ref: './paths/marketing.yaml#/automation-plans-id-status'
+  /api/v1/marketing/notification-templates:
+    $ref: './paths/marketing.yaml#/notification-templates'
+  /api/v1/marketing/notification-templates/{id}:
+    $ref: './paths/marketing.yaml#/notification-templates-id'
+  /api/v1/marketing/notification-templates/{id}/status:
+    $ref: './paths/marketing.yaml#/notification-templates-id-status'
+  /api/v1/marketing/audience-tags:
+    $ref: './paths/marketing.yaml#/audience-tags'
+  /api/v1/marketing/activities/options:
+    $ref: './paths/marketing.yaml#/activities-options'
+
+  # ---------- 资产 ----------
+  /api/v1/coupons:
+    $ref: './paths/assets.yaml#/coupons'
+  /api/v1/coupons/stats:
+    $ref: './paths/assets.yaml#/coupons-stats'
+  /api/v1/coupons/options:
+    $ref: './paths/assets.yaml#/coupons-options'
+  /api/v1/coupons/{id}:
+    $ref: './paths/assets.yaml#/coupons-id'
+  /api/v1/coupons/{id}/status:
+    $ref: './paths/assets.yaml#/coupons-id-status'
+  /api/v1/points/overview:
+    $ref: './paths/assets.yaml#/points-overview'
+  /api/v1/points/rules:
+    $ref: './paths/assets.yaml#/points-rules'
+  /api/v1/points/rules/{id}:
+    $ref: './paths/assets.yaml#/points-rules-id'
+  /api/v1/points/records:
+    $ref: './paths/assets.yaml#/points-records'
+  /api/v1/coupon-packages:
+    $ref: './paths/assets.yaml#/coupon-packages'
+  /api/v1/coupon-packages/{id}:
+    $ref: './paths/assets.yaml#/coupon-packages-id'
+
+  # ---------- 业务 ----------
+  /api/v1/menus:
+    $ref: './paths/business.yaml#/menus'
+  /api/v1/menus/{id}:
+    $ref: './paths/business.yaml#/menus-id'
+  /api/v1/menus/{id}/dishes:
+    $ref: './paths/business.yaml#/menus-id-dishes'
+  /api/v1/stores:
+    $ref: './paths/business.yaml#/stores'
+  /api/v1/stores/{id}:
+    $ref: './paths/business.yaml#/stores-id'
+  /api/v1/delivery/rules:
+    $ref: './paths/business.yaml#/delivery-rules'
+  /api/v1/delivery/rules/{id}:
+    $ref: './paths/business.yaml#/delivery-rules-id'
+  /api/v1/delivery/overview:
+    $ref: './paths/business.yaml#/delivery-overview'
+
+  # ---------- 菜品 ----------
+  /api/v1/dishes:
+    $ref: './paths/dish.yaml#/dishes'
+  /api/v1/dishes/categories/options:
+    $ref: './paths/dish.yaml#/dishes-categories-options'
+  /api/v1/dishes/{id}:
+    $ref: './paths/dish.yaml#/dishes-id'
+  /api/v1/dishes/{id}/status:
+    $ref: './paths/dish.yaml#/dishes-id-status'
+
+  # ---------- 订单 ----------
+  /api/v1/orders:
+    $ref: './paths/order.yaml#/orders'
+  /api/v1/orders/{id}:
+    $ref: './paths/order.yaml#/orders-id'
+
+  # ---------- 售后 / 系统 ----------
+  /api/v1/after-sales:
+    $ref: './paths/ops.yaml#/after-sales'
+  /api/v1/after-sales/{id}/audit:
+    $ref: './paths/ops.yaml#/after-sales-id-audit'
+  /api/v1/positions:
+    $ref: './paths/ops.yaml#/positions'
+  /api/v1/positions/departments/options:
+    $ref: './paths/ops.yaml#/positions-departments-options'
+  /api/v1/positions/{id}:
+    $ref: './paths/ops.yaml#/positions-id'
+  /api/v1/staff:
+    $ref: './paths/ops.yaml#/staff'
+  /api/v1/staff/form-options:
+    $ref: './paths/ops.yaml#/staff-form-options'
+  /api/v1/staff/{id}:
+    $ref: './paths/ops.yaml#/staff-id'
+  /api/v1/logs:
+    $ref: './paths/ops.yaml#/logs'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

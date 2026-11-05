@@ -1,5 +1,7 @@
 # 比萨斯 · 连锁餐饮 SaaS 管理后台（前端原型）
 
+![CI](https://github.com/xinyunz631-beep/pisa/actions/workflows/ci.yml/badge.svg)
+
 纯前端页面原型：**不做后端**，所有数据来自内存 Mock 层，交互（筛选、分页、增删改、抽屉详情）都能真实点。
 
 ## 技术栈
@@ -130,7 +132,17 @@ src/
 - [07-order.md](./docs/api/07-order.md) 订单查询
 - [08-ops.md](./docs/api/08-ops.md) 售后处理 + 系统（岗位/人员/日志）
 
+另外提供机器可读的 **[OpenAPI 3.0.3 规范](<docs/api/openapi/openapi.yaml>)**（`npm run docs:lint` 校验、`npm run docs:preview` 预览），可导入 Swagger UI / Postman / Apifox 直接调试。
+
 接入真实后端时只需替换 `src/services/*` 的实现（保持函数签名），页面代码零改动。
+
+## 持续集成
+
+[`.github/workflows/ci.yml`](<.github/workflows/ci.yml>) 在每次 push / PR 时自动执行：
+
+1. `npm ci` + `npm run build`：前端类型检查与构建
+2. `npm run docs:lint`：OpenAPI 规范校验（Redocly）
+3. Markdown 链接检查（lychee，仅本地文件链接）
 
 ## 下一步
 

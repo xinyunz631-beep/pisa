@@ -1,0 +1,105 @@
+# 菜品模块 schema
+# 对应 docs/api/06-dish.md。
+
+Dish:
+  type: object
+  description: 菜品
+  required: [id, name, category, price, cost, sales, status, description, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 菜品编号，D + 3 位序号；新增时由服务端生成
+      example: D001
+    name:
+      type: string
+      maxLength: 30
+      description: 菜品名称
+      example: 麻辣香锅
+    category:
+      type: string
+      description: 所属分类，取值来自分类选项接口
+      example: 招牌主菜
+    price:
+      type: number
+      minimum: 0
+      description: 售价（元）
+      example: 68
+    cost:
+      type: number
+      minimum: 0
+      description: 成本（元）
+      example: 26
+    sales:
+      type: integer
+      minimum: 0
+      description: 累计销量（只读，新增时服务端置 0）
+      example: 1749
+    status:
+      type: string
+      description: on=在售，off=已下架
+      enum: ['on', 'off']
+    description:
+      type: string
+      maxLength: 120
+      description: 菜品描述
+      example: 招牌麻辣锅底，可选微辣/中辣/特辣
+    updatedAt:
+      type: string
+      description: 更新时间，YYYY-MM-DD HH:mm:ss（Mock 数据只到分钟）
+      example: '2026-11-03 09:00'
+
+DishInput:
+  type: object
+  description: 新增 / 编辑菜品的请求体（新增走 POST，编辑走 PUT，均不传 id）
+  required: [name, category, price, cost, status]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 30
+      example: 蒜蓉西兰花
+    category:
+      type: string
+      description: 分类名称，须存在于分类字典
+      example: 小炒
+    price:
+      type: number
+      minimum: 0
+      multipleOf: 0.01
+      description: 售价（元），最多 2 位小数
+      example: 28
+    cost:
+      type: number
+      minimum: 0
+      multipleOf: 0.01
+      description: 成本（元），最多 2 位小数；建议 cost ≤ price
+      example: 10
+    status:
+      type: string
+      enum: ['on', 'off']
+      description: 售卖状态
+    description:
+      type: string
+      maxLength: 120
+      description: 菜品描述，缺省保存为空串
+      example: 现炒蒜香，清爽解腻
+
+PagedDishes:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Dish'
+
+DishStatusInput:
+  type: object
+  description: 菜品上下架请求体
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: ['on', 'off']
+      description: on=上架（在售），off=下架

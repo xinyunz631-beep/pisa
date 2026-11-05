@@ -1,0 +1,98 @@
+# 数据模块（仪表盘）schema
+
+DashboardSummary:
+  type: object
+  description: 仪表盘聚合数据
+  required: [kpis, trend, ranking, recentOrders]
+  properties:
+    kpis:
+      type: array
+      description: KPI 卡片
+      items:
+        $ref: '#/Kpi'
+    trend:
+      type: array
+      description: 近 7 日营业额趋势
+      items:
+        $ref: '#/TrendPoint'
+    ranking:
+      type: array
+      description: 今日门店营业额 TOP 6
+      items:
+        $ref: '#/StoreRank'
+    recentOrders:
+      type: array
+      description: 最近 5 笔订单
+      items:
+        $ref: '../schemas/order.yaml#/Order'
+
+Kpi:
+  type: object
+  required: [key, title, value, delta, hint]
+  properties:
+    key:
+      type: string
+      enum: [turnover, orders, avg, members]
+      description: 指标键
+    title:
+      type: string
+      example: 今日营业额
+    value:
+      type: number
+      description: 指标值（金额单位元）
+      example: 6128
+    unit:
+      type: string
+      description: 单位（元 / 单 / 人）
+      example: 元
+    delta:
+      type: number
+      description: 较昨日变化百分比，正数上升、负数下降，保留 1 位小数
+      example: 20.2
+    hint:
+      type: string
+      example: 较昨日
+
+TrendPoint:
+  type: object
+  required: [label, value]
+  properties:
+    label:
+      type: string
+      description: 'MM-DD 周X'
+      example: 10-29 周四
+    value:
+      type: number
+      description: 当日营业额（元，已剔除已退款订单）
+      example: 1233
+
+StoreRank:
+  type: object
+  required: [storeId, name, turnover, orders]
+  properties:
+    storeId:
+      type: string
+      example: ST008
+    name:
+      type: string
+      example: 成都春熙店
+    turnover:
+      type: number
+      description: 当日营业额（元，已剔除已退款订单）
+      example: 1208
+    orders:
+      type: integer
+      description: 当日有效订单数
+      example: 6
+
+StoreOption:
+  type: object
+  required: [label, value]
+  properties:
+    label:
+      type: string
+      example: 上海静安店
+    value:
+      type: string
+      description: 门店编号
+      example: ST001

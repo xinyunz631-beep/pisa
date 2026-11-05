@@ -1,0 +1,870 @@
+# 营销模块接口
+
+full-reductions:
+  get:
+    tags: [营销]
+    operationId: listFullReductions
+    summary: 满减活动分页列表
+    description: 支持按活动名称模糊搜索、按状态筛选、按活动时间区间筛选（与活动窗口有交集即命中），默认按创建时间倒序。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 活动名称模糊匹配（包含），trim 后为空视为不筛选
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 活动状态，all 或省略表示全部
+        schema:
+          type: string
+          enum: [notStarted, running, ended, disabled, all]
+      - name: startDate
+        in: query
+        required: false
+        description: 活动时间区间起始日 YYYY-MM-DD（含），需与 endDate 成对出现
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: false
+        description: 活动时间区间结束日 YYYY-MM-DD（含），需与 startDate 成对出现
+        schema:
+          type: string
+          format: date
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/PagedFullReductions'
+      '400':
+        description: 参数校验失败（日期格式错误或未成对、page / pageSize 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+  post:
+    tags: [营销]
+    operationId: createFullReduction
+    summary: 新增满减活动
+    description: 写入时只传 storeIds，返回的 storeNames 由后端 join 门店表得到；status 以请求体为准，不做时间派生。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/FullReductionInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的活动对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/FullReductionActivity'
+      '400':
+        description: 参数校验失败（名称超长、门店为空或不存在、时间倒挂、规则非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 门店不存在
+      '409':
+        description: 同一门店 + 时间段活动重叠
+
+full-reductions-id:
+  put:
+    tags: [营销]
+    operationId: updateFullReduction
+    summary: 编辑满减活动
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/FullReductionInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的活动对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/FullReductionActivity'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满减活动不存在
+      '409':
+        description: 同一门店 + 时间段活动重叠
+  delete:
+    tags: [营销]
+    operationId: deleteFullReduction
+    summary: 删除满减活动
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满减活动不存在
+      '409':
+        description: 活动已被自动化计划引用，禁止删除
+
+full-reductions-id-status:
+  patch:
+    tags: [营销]
+    operationId: updateFullReductionStatus
+    summary: 满减活动启用 / 停用
+    description: enabled=true 时按 startAt / endAt 与当前时间重新派生状态，enabled=false 时置为 disabled，均不修改起止时间。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/StatusInput'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: enabled 非布尔
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满减活动不存在
+
+full-discounts:
+  get:
+    tags: [营销]
+    operationId: listFullDiscounts
+    summary: 满折活动分页列表
+    description: 筛选项与满减活动列表一致，支持按活动名称、状态、活动时间区间筛选。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 活动名称模糊匹配（包含）
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 活动状态，all 或省略表示全部
+        schema:
+          type: string
+          enum: [notStarted, running, ended, disabled, all]
+      - name: startDate
+        in: query
+        required: false
+        description: 活动时间区间起始日 YYYY-MM-DD（含），需与 endDate 成对出现
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: false
+        description: 活动时间区间结束日 YYYY-MM-DD（含），需与 startDate 成对出现
+        schema:
+          type: string
+          format: date
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/PagedFullDiscounts'
+      '400':
+        description: 参数校验失败（日期格式错误或未成对、page / pageSize 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+  post:
+    tags: [营销]
+    operationId: createFullDiscount
+    summary: 新增满折活动
+    description: 写入时只传 storeIds，返回的 storeNames 由后端 join 门店表得到；status 以请求体为准，不做时间派生。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/FullDiscountInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的活动对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/FullDiscountActivity'
+      '400':
+        description: 参数校验失败（名称超长、门店为空或不存在、时间倒挂、规则非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 门店不存在
+      '409':
+        description: 同一门店 + 时间段活动重叠
+
+full-discounts-id:
+  put:
+    tags: [营销]
+    operationId: updateFullDiscount
+    summary: 编辑满折活动
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/FullDiscountInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的活动对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/FullDiscountActivity'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满折活动不存在
+      '409':
+        description: 同一门店 + 时间段活动重叠
+  delete:
+    tags: [营销]
+    operationId: deleteFullDiscount
+    summary: 删除满折活动
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满折活动不存在
+      '409':
+        description: 活动已被自动化计划引用，禁止删除
+
+full-discounts-id-status:
+  patch:
+    tags: [营销]
+    operationId: updateFullDiscountStatus
+    summary: 满折活动启用 / 停用
+    description: enabled=true 时按 startAt / endAt 与当前时间重新派生状态，enabled=false 时置为 disabled，均不修改起止时间。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/StatusInput'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: enabled 非布尔
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 满折活动不存在
+
+coupon-tasks:
+  get:
+    tags: [营销]
+    operationId: listCouponTasks
+    summary: 发券任务分页列表
+    description: 支持按任务名称或券名称模糊搜索、按状态筛选，默认按创建时间倒序。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 任务名称或券名称模糊匹配（包含任一即命中）
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 任务状态，all 或省略表示全部
+        schema:
+          type: string
+          enum: [running, ended, paused, all]
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/PagedCouponTasks'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+  post:
+    tags: [营销]
+    operationId: createCouponTask
+    summary: 新增发券任务
+    description: 新建任务固定 status=running、claimed=0，couponName 由后端按 couponId join 卡券表返回。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/CouponTaskInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的任务对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/CouponTask'
+      '400':
+        description: 参数校验失败（名称超长、人群为空、数量越界、日期倒挂）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 卡券或人群标签不存在
+
+coupon-tasks-id:
+  put:
+    tags: [营销]
+    operationId: updateCouponTask
+    summary: 编辑发券任务
+    description: 仅可修改名称、券、人群、计划数量与有效期，claimed / status / createdAt 不接受修改。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/CouponTaskInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的任务对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/CouponTask'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 发券任务或卡券不存在
+  delete:
+    tags: [营销]
+    operationId: deleteCouponTask
+    summary: 删除发券任务
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 发券任务不存在
+      '409':
+        description: 任务已被自动化计划引用或已产生领取记录，禁止删除
+
+automation-plans:
+  get:
+    tags: [营销]
+    operationId: listAutomationPlans
+    summary: 自动化计划分页列表
+    description: 支持按计划名称模糊搜索、按渠道、按状态筛选；渠道筛选为任一命中（计划 channels 包含该值即返回）。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 计划名称模糊匹配（包含）
+        schema:
+          type: string
+      - name: channel
+        in: query
+        required: false
+        description: 触达渠道，all 或省略表示全部
+        schema:
+          type: string
+          enum: [sms, wechat, inbox, all]
+      - name: status
+        in: query
+        required: false
+        description: 计划状态，all 或省略表示全部
+        schema:
+          type: string
+          enum: [enabled, paused, all]
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/PagedAutomationPlans'
+      '400':
+        description: 参数校验失败（channel / status 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+  post:
+    tags: [营销]
+    operationId: createAutomationPlan
+    summary: 新增自动化计划
+    description: 新建计划固定 status=enabled；activityName / activityType 由后端按 activityId 反查填充。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/AutomationPlanInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的计划对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/AutomationPlan'
+      '400':
+        description: 参数校验失败（名称超长、活动 / 人群 / 渠道为空、触发规则超长、枚举非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 关联活动不存在
+
+automation-plans-id:
+  put:
+    tags: [营销]
+    operationId: updateAutomationPlan
+    summary: 编辑自动化计划
+    description: 编辑不改变 status 与 createdAt；activityName / activityType 始终由 activityId 反查。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/AutomationPlanInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的计划对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/AutomationPlan'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 自动化计划或关联活动不存在
+  delete:
+    tags: [营销]
+    operationId: deleteAutomationPlan
+    summary: 删除自动化计划
+    description: 建议仅允许删除已暂停计划，执行中的计划应先暂停再删除。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 自动化计划不存在
+
+automation-plans-id-status:
+  patch:
+    tags: [营销]
+    operationId: updateAutomationPlanStatus
+    summary: 自动化计划启用 / 暂停
+    description: enabled=true 时 status 置为 enabled，enabled=false 时置为 paused。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/StatusInput'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: enabled 非布尔
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 自动化计划不存在
+
+notification-templates:
+  get:
+    tags: [营销]
+    operationId: listNotificationTemplates
+    summary: 通知模板分页列表
+    description: 支持按模板名称模糊搜索、按渠道（单值精确匹配）、按状态筛选。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 模板名称模糊匹配（包含）
+        schema:
+          type: string
+      - name: channel
+        in: query
+        required: false
+        description: 渠道，all 或省略表示全部
+        schema:
+          type: string
+          enum: [sms, wechat, inbox, all]
+      - name: status
+        in: query
+        required: false
+        description: 模板状态，all 或省略表示全部
+        schema:
+          type: string
+          enum: [enabled, disabled, all]
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/PagedNotificationTemplates'
+      '400':
+        description: 参数校验失败（channel / status 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+  post:
+    tags: [营销]
+    operationId: createNotificationTemplate
+    summary: 新增通知模板
+    description: 新建模板固定 status=enabled、sendCount=0，summary 与 updatedAt 由后端生成。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/NotificationTemplateInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的模板对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/NotificationTemplate'
+      '400':
+        description: 参数校验失败（名称 / 内容超长、内容为空、枚举非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+
+notification-templates-id:
+  put:
+    tags: [营销]
+    operationId: updateNotificationTemplate
+    summary: 编辑通知模板
+    description: summary 与 updatedAt 由后端重新生成；sendCount、status 不接受修改。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/NotificationTemplateInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的模板对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/marketing.yaml#/NotificationTemplate'
+      '400':
+        description: 参数校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 通知模板不存在
+  delete:
+    tags: [营销]
+    operationId: deleteNotificationTemplate
+    summary: 删除通知模板
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 通知模板不存在
+      '409':
+        description: 模板已被发送任务引用，禁止删除
+
+notification-templates-id-status:
+  patch:
+    tags: [营销]
+    operationId: updateNotificationTemplateStatus
+    summary: 通知模板启用 / 停用
+    description: enabled=true 时 status 置为 enabled，enabled=false 时置为 disabled；历史 sendCount 保留。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/marketing.yaml#/StatusInput'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: enabled 非布尔
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 通知模板不存在
+
+audience-tags:
+  get:
+    tags: [营销]
+    operationId: listAudienceTags
+    summary: 人群标签选项
+    description: 返回启用的会员标签名称数组，发券任务与自动化计划共用；数据源为 GET /api/v1/member-tags?status=enabled。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: string
+                      example: [全部会员, 新客, 高频到店, 沉默会员, 价格敏感, 外卖偏好, 周末消费, 生日本月, 亲子客群, 学生客群, 企业客户, 金卡会员]
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+
+activities-options:
+  get:
+    tags: [营销]
+    operationId: listMarketingActivityOptions
+    summary: 营销活动选项
+    description: 自动化计划「关联活动」下拉选项，聚合满减、满折、发券三类活动，按满减 → 满折 → 发券分组排序。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/marketing.yaml#/MarketingActivityOption'
+                      example:
+                        - value: FR001
+                          label: 国庆满减狂欢
+                          activityType: 满减活动
+                        - value: FD001
+                          label: 中秋满折特惠
+                          activityType: 满折活动
+                        - value: CP001
+                          label: 双十一新客拉新
+                          activityType: 发券活动
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限

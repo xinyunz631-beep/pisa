@@ -1,0 +1,93 @@
+# 数据模块接口
+
+dashboard-summary:
+  get:
+    tags: [数据]
+    operationId: getDashboardSummary
+    summary: 仪表盘聚合数据
+    description: 返回 KPI、近 7 日营业额趋势、今日门店营业额排行、最近订单；计算口径见 docs/api/01-dashboard.md。
+    parameters:
+      - name: date
+        in: query
+        required: false
+        description: 统计日期 YYYY-MM-DD，默认今天
+        schema:
+          type: string
+          format: date
+      - name: storeId
+        in: query
+        required: false
+        description: 门店编号（不传=全部门店）
+        schema:
+          type: string
+          example: ST001
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/dashboard.yaml#/DashboardSummary'
+            example:
+              code: 0
+              message: ok
+              data:
+                kpis:
+                  - key: turnover
+                    title: 今日营业额
+                    value: 6128
+                    unit: 元
+                    delta: 20.2
+                    hint: 较昨日
+                  - key: orders
+                    title: 今日订单量
+                    value: 43
+                    unit: 单
+                    delta: 22.9
+                    hint: 较昨日
+                trend:
+                  - label: 11-04 周三
+                    value: 6128
+                ranking:
+                  - storeId: ST008
+                    name: 成都春熙店
+                    turnover: 1208
+                    orders: 6
+                recentOrders: []
+      '401':
+        description: 未登录 / token 失效
+
+stores-options:
+  get:
+    tags: [数据]
+    operationId: getStoreOptions
+    summary: 门店下拉选项（跨模块公共）
+    description: 返回全部门店，供顶栏门店切换及订单/配送/营销等模块筛选使用。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/dashboard.yaml#/StoreOption'
+            example:
+              code: 0
+              message: ok
+              data:
+                - label: 上海静安店
+                  value: ST001
+                - label: 上海徐汇店
+                  value: ST002

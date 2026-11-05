@@ -1,0 +1,346 @@
+# 资产模块 schema（卡券 / 积分 / 券包）
+# 字段与枚举严格对应 docs/api/04-assets.md；时间字段按契约统一 YYYY-MM-DD HH:mm:ss
+
+Coupon:
+  type: object
+  description: 卡券
+  required: [id, name, type, value, threshold, validFrom, validTo, total, claimed, used, status]
+  properties:
+    id:
+      type: string
+      description: 卡券编号，CP + 3 位序号
+      example: CP001
+    name:
+      type: string
+      example: 新客立减券
+    type:
+      type: string
+      enum: [cash, discount, exchange]
+      description: cash=代金券，discount=折扣券，exchange=兑换券
+    value:
+      type: number
+      description: 代金券 / 兑换券为面额（元）；折扣券为折扣（8.5 表示 8.5 折）
+      example: 10
+    threshold:
+      type: number
+      description: 使用门槛（元），0 表示无门槛
+      example: 30
+    validFrom:
+      type: string
+      format: date
+      description: 有效期开始日
+      example: '2026-09-01'
+    validTo:
+      type: string
+      format: date
+      description: 有效期结束日（闭区间）
+      example: '2026-11-04'
+    total:
+      type: integer
+      description: 发行量（张）
+      example: 3000
+    claimed:
+      type: integer
+      description: 已领取（张），只读，由领取行为累加
+      example: 2463
+    used:
+      type: integer
+      description: 已核销（张），只读，由核销行为累加
+      example: 1171
+    status:
+      type: string
+      enum: [active, ended, disabled]
+      description: active=进行中，ended=已结束，disabled=已停用
+
+CouponInput:
+  type: object
+  description: 卡券新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, type, value, threshold, validFrom, validTo, total]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 双十一满 100 减 30 券
+    type:
+      type: string
+      enum: [cash, discount, exchange]
+    value:
+      type: number
+      description: type=discount 时 1~9.9（1 位小数）；否则 1~1000 的整数元
+      minimum: 1
+      maximum: 1000
+      example: 30
+    threshold:
+      type: number
+      description: 使用门槛（元），0 表示无门槛
+      minimum: 0
+      maximum: 10000
+      example: 100
+    validFrom:
+      type: string
+      format: date
+      example: '2026-10-05'
+    validTo:
+      type: string
+      format: date
+      description: 不得早于 validFrom
+      example: '2026-11-04'
+    total:
+      type: integer
+      description: 发行量（张），不得小于已领取数
+      minimum: 1
+      maximum: 100000
+      example: 2000
+
+PagedCoupons:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Coupon'
+
+CardStats:
+  type: object
+  description: 卡券 KPI 统计（全量卡券口径，与列表筛选无关）
+  required: [totalIssued, totalClaimed, totalUsed, redeemRate]
+  properties:
+    totalIssued:
+      type: integer
+      description: 总发行量（张）
+      example: 70600
+    totalClaimed:
+      type: integer
+      description: 已领取（张）
+      example: 40407
+    totalUsed:
+      type: integer
+      description: 已核销（张）
+      example: 22759
+    redeemRate:
+      type: number
+      description: 核销率（%）= totalUsed / totalClaimed × 100，保留 1 位小数；totalClaimed 为 0 时返回 0
+      example: 56.3
+
+CouponOption:
+  type: object
+  description: 券下拉选项（券包表单「包含券」多选数据源）
+  required: [id, name, type]
+  properties:
+    id:
+      type: string
+      example: CP001
+    name:
+      type: string
+      example: 新客立减券
+    type:
+      type: string
+      enum: [cash, discount, exchange]
+
+PointRule:
+  type: object
+  description: 积分规则
+  required: [id, name, scene, points, enabled, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 规则编号，PR + 3 位序号
+      example: PR001
+    name:
+      type: string
+      example: 消费 1 元得 1 积分
+    scene:
+      type: string
+      enum: [consume, review, checkin, register]
+      description: consume=消费，review=评价，checkin=签到，register=注册
+    points:
+      type: integer
+      description: 单次触发发放的积分值
+      example: 1
+    enabled:
+      type: boolean
+      description: 是否启用
+      example: true
+    updatedAt:
+      type: string
+      description: 最后更新时间
+      example: '2026-11-02 10:20:00'
+
+PointRuleInput:
+  type: object
+  description: 积分规则新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, scene, points, enabled]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 消费满 100 元奖励
+    scene:
+      type: string
+      enum: [consume, review, checkin, register]
+    points:
+      type: integer
+      minimum: 1
+      maximum: 10000
+      example: 30
+    enabled:
+      type: boolean
+      description: 新增默认 true；启用 / 停用均通过编辑接口提交
+      example: true
+
+PagedPointRules:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/PointRule'
+
+PointRecord:
+  type: object
+  description: 积分流水（只读，由业务事件与定时任务写入）
+  required: [id, nickname, type, points, createdAt, remark]
+  properties:
+    id:
+      type: string
+      description: 流水编号，PT + 4 位序号
+      example: PT0002
+    nickname:
+      type: string
+      description: 会员昵称
+      example: 老饕张
+    type:
+      type: string
+      enum: [earn, spend, expire]
+      description: earn=获得，spend=消耗，expire=过期
+    points:
+      type: integer
+      description: 变动积分数，恒为正数，增减方向由 type 决定
+      example: 132
+    createdAt:
+      type: string
+      description: 变动时间
+      example: '2026-10-29 19:57:00'
+    remark:
+      type: string
+      description: 业务备注
+      example: 积分商城兑换周边
+
+PagedPointRecords:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/PointRecord'
+
+PointOverview:
+  type: object
+  description: 积分概览 KPI
+  required: [issued, consumed, circulating]
+  properties:
+    issued:
+      type: integer
+      description: 累计发放积分（Σ type=earn）
+      example: 4708
+    consumed:
+      type: integer
+      description: 累计消耗积分（Σ type=spend）
+      example: 1904
+    circulating:
+      type: integer
+      description: 当前流通积分 = issued - consumed - Σ type=expire
+      example: 2487
+
+CouponPackage:
+  type: object
+  description: 券包
+  required: [id, name, couponIds, validFrom, validTo, total, claimed, status, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 券包编号，PG + 3 位序号
+      example: PG001
+    name:
+      type: string
+      example: 新客礼包
+    couponIds:
+      type: array
+      description: 包含的卡券编号列表（引用 Coupon.id，至少 1 张、不重复）
+      items:
+        type: string
+      example: [CP011, CP014]
+    validFrom:
+      type: string
+      format: date
+      example: '2026-10-01'
+    validTo:
+      type: string
+      format: date
+      example: '2026-11-04'
+    total:
+      type: integer
+      description: 发行量（份）
+      example: 2000
+    claimed:
+      type: integer
+      description: 已领取（份），只读
+      example: 1584
+    status:
+      type: string
+      enum: [active, ended, disabled]
+    updatedAt:
+      type: string
+      description: 最后更新时间
+      example: '2026-11-02 17:57:00'
+
+PackageInput:
+  type: object
+  description: 券包新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, couponIds, validFrom, validTo, total, status]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 双十一欢聚包
+    couponIds:
+      type: array
+      description: 包含券编号列表，至少 1 个且元素须存在、不重复
+      minItems: 1
+      items:
+        type: string
+      example: [CP005, CP014, CP024]
+    validFrom:
+      type: string
+      format: date
+      example: '2026-10-20'
+    validTo:
+      type: string
+      format: date
+      description: 不得早于 validFrom
+      example: '2026-11-04'
+    total:
+      type: integer
+      minimum: 1
+      maximum: 100000
+      example: 1500
+    status:
+      type: string
+      enum: [active, ended, disabled]
+      description: 券包状态无独立状态接口，通过编辑接口提交
+
+PagedCouponPackages:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/CouponPackage'

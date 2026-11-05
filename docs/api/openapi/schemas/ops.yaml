@@ -1,0 +1,366 @@
+# 售后 / 系统模块 schema
+# 对应 docs/api/08-ops.md（售后处理、岗位管理、人员管理、系统日志）。
+
+AfterSaleTicket:
+  type: object
+  description: 售后工单（含订单商品明细与处理记录时间线）
+  required: [id, orderId, storeName, customer, phone, type, reason, amount, status, appliedAt, items, records]
+  properties:
+    id:
+      type: string
+      description: 工单号，AS + 申请日期 YYYYMMDD + 4 位序号
+      example: AS202611040001
+    orderId:
+      type: string
+      description: 关联订单号
+      example: BS202611042001
+    storeName:
+      type: string
+      description: 门店名称
+      example: 广州天河店
+    customer:
+      type: string
+      description: 客户姓名
+      example: 李娜
+    phone:
+      type: string
+      description: 联系电话（脱敏格式）
+      example: '138****3275'
+    type:
+      type: string
+      description: refund=退款，return=退货，exchange=换货
+      enum: [refund, return, exchange]
+    reason:
+      type: string
+      description: 售后原因
+      example: 包装破损
+    amount:
+      type: number
+      description: 售后金额（元），= Σ(items.price × qty)
+      example: 112
+    status:
+      type: string
+      description: pending=待处理，processing=处理中，done=已完成，rejected=已拒绝（done/rejected 为终态）
+      enum: [pending, processing, done, rejected]
+    appliedAt:
+      type: string
+      description: 申请时间，YYYY-MM-DD HH:mm:ss（Mock 数据只到分钟）
+      example: '2026-11-04 04:30'
+    items:
+      type: array
+      description: 订单商品明细（快照）
+      items:
+        type: object
+        required: [name, price, qty]
+        properties:
+          name:
+            type: string
+            description: 菜品名称（快照）
+            example: 红烧肉
+          price:
+            type: number
+            description: 单价（元，快照）
+            example: 56
+          qty:
+            type: integer
+            minimum: 1
+            description: 数量
+            example: 2
+    records:
+      type: array
+      description: 处理记录时间线，按时间正序追加，不可修改历史记录
+      items:
+        type: object
+        required: [time, operator, action]
+        properties:
+          time:
+            type: string
+            description: 处理时间
+            example: '2026-11-04 04:30'
+          operator:
+            type: string
+            description: 操作人（客户/客服/审核人）
+            example: 李娜
+          action:
+            type: string
+            description: 处理描述
+            example: 客户提交售后申请
+
+PagedAfterSales:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/AfterSaleTicket'
+
+AfterSaleAuditInput:
+  type: object
+  description: 售后审核请求体（通过 / 拒绝共用一个接口，由 action 区分）
+  required: [action]
+  properties:
+    action:
+      type: string
+      enum: [approve, reject]
+      description: approve=审核通过（→ done），reject=审核拒绝（→ rejected）
+    remark:
+      type: string
+      maxLength: 200
+      description: 审核备注 / 拒绝原因；拒绝时建议必填（写入处理记录）
+      example: 已与客户确认，不符合售后条件
+
+Position:
+  type: object
+  description: 岗位
+  required: [id, name, code, department, staffCount, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: 岗位编号，P + 3 位序号
+      example: P001
+    name:
+      type: string
+      maxLength: 20
+      description: 岗位名称
+      example: 区域经理
+    code:
+      type: string
+      description: 岗位编码，2~20 位字母/数字/下划线/中划线，保存时转大写
+      example: POS001
+    department:
+      type: string
+      description: 所属部门
+      example: 运营中心
+    staffCount:
+      type: integer
+      minimum: 0
+      description: 在岗人数（只读，新增为 0；生产建议由人员数据聚合）
+      example: 9
+    status:
+      type: string
+      description: active=启用，disabled=停用
+      enum: [active, disabled]
+    createdAt:
+      type: string
+      format: date
+      description: 创建日期 YYYY-MM-DD
+      example: '2026-10-15'
+
+PositionInput:
+  type: object
+  description: 新增 / 编辑岗位请求体（新增走 POST，编辑走 PUT，均不传 id）
+  required: [name, code, department, status]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 20
+      example: 门店督导
+    code:
+      type: string
+      pattern: '^[A-Za-z0-9_-]{2,20}$'
+      description: 岗位编码，保存前去空格并转大写；全局唯一
+      example: POS023
+    department:
+      type: string
+      description: 所属部门，须来自部门选项
+      example: 门店运营部
+    status:
+      type: string
+      enum: [active, disabled]
+      description: 岗位状态
+
+PagedPositions:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Position'
+
+DepartmentOption:
+  type: string
+  description: 部门名称选项（当前契约返回字符串数组；生产可升级为 {label,value} 对象并同步升级契约）
+  example: 门店运营部
+
+Staff:
+  type: object
+  description: 人员（含账号信息）
+  required: [id, name, employeeNo, phone, position, storeName, status, joinedAt, email, role, lastLogin, loginIp]
+  properties:
+    id:
+      type: string
+      description: 人员编号，S + 3 位序号
+      example: S001
+    name:
+      type: string
+      maxLength: 20
+      description: 姓名
+      example: 张伟
+    employeeNo:
+      type: string
+      description: 工号，3~12 位字母/数字，保存时转大写；全局唯一
+      example: EMP1001
+    phone:
+      type: string
+      description: 手机号（Mock 为明文；生产列表按权限脱敏）
+      example: '17790768739'
+    position:
+      type: string
+      description: 岗位名称（关联岗位字典）
+      example: 收银员
+    storeName:
+      type: string
+      description: 所属门店名称
+      example: 武汉江汉路店
+    status:
+      type: string
+      description: active=在职，disabled=停用
+      enum: [active, disabled]
+    joinedAt:
+      type: string
+      format: date
+      description: 入职日期 YYYY-MM-DD
+      example: '2026-09-10'
+    email:
+      type: string
+      format: email
+      description: 邮箱（新增时服务端生成，不可编辑）
+      example: staff001@bisas.com
+    role:
+      type: string
+      description: 权限角色（新增时服务端默认「门店员工」，不可由表单指定）
+      example: 客服专员
+    lastLogin:
+      type: string
+      description: 最近登录时间；停用账号显示「账号已停用」
+      example: '2026-10-18 13:04'
+    loginIp:
+      type: string
+      description: 最近登录 IP；停用账号显示「—」
+      example: 192.168.3.86
+
+StaffInput:
+  type: object
+  description: 新增 / 编辑人员请求体（新增走 POST，编辑走 PUT，均不传 id）
+  required: [name, employeeNo, phone, position, storeName, status, joinedAt]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 20
+      example: 周琳
+    employeeNo:
+      type: string
+      pattern: '^[A-Za-z0-9]{3,12}$'
+      description: 工号，保存前去空格并转大写；全局唯一
+      example: EMP1027
+    phone:
+      type: string
+      pattern: '^1[3-9]\d{9}$'
+      description: 手机号（11 位）
+      example: '13812345678'
+    position:
+      type: string
+      description: 岗位名称，须来自岗位选项
+      example: 收银员
+    storeName:
+      type: string
+      description: 所属门店名称，须来自门店选项
+      example: 上海静安店
+    status:
+      type: string
+      enum: [active, disabled]
+      description: 人员状态
+    joinedAt:
+      type: string
+      format: date
+      description: 入职日期，不得晚于当天
+      example: '2026-11-01'
+
+PagedStaff:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Staff'
+
+StaffFormOptions:
+  type: object
+  description: 人员新增/编辑表单与列表筛选共用的选项数据
+  required: [positions, stores, roles]
+  properties:
+    positions:
+      type: array
+      description: 岗位名称选项（来自岗位数据，Mock 返回全部 22 个岗位名称）
+      items:
+        type: string
+      example: [区域经理, 门店店长, 收银员]
+    stores:
+      type: array
+      description: 门店名称选项（来自人员数据去重，9 个）
+      items:
+        type: string
+      example: [武汉江汉路店, 西安钟楼店, 上海静安店]
+    roles:
+      type: array
+      description: 权限角色选项（来自人员数据去重，5 个）
+      items:
+        type: string
+      example: [客服专员, 总部管理员, 门店员工]
+
+SystemLog:
+  type: object
+  description: 系统操作日志（只读）
+  required: [id, time, operator, module, action, ip, result, duration]
+  properties:
+    id:
+      type: string
+      description: 日志编号，LOG + 3 位序号
+      example: LOG001
+    time:
+      type: string
+      description: 操作时间，YYYY-MM-DD HH:mm:ss（Mock 数据只到分钟）
+      example: '2026-11-04 03:34'
+    operator:
+      type: string
+      description: 操作人
+      example: 马超
+    module:
+      type: string
+      description: 所属模块，如 订单管理 / 售后处理 / 菜品管理 / 岗位管理 / 人员管理 / 系统设置
+      example: 营销活动
+    action:
+      type: string
+      description: create=新增，update=编辑，delete=删除，login=登录，export=导出
+      enum: [create, update, delete, login, export]
+    ip:
+      type: string
+      description: 操作 IP
+      example: 10.0.8.102
+    result:
+      type: string
+      description: success=成功，fail=失败（失败也需记录）
+      enum: [success, fail]
+    duration:
+      type: integer
+      minimum: 0
+      description: 耗时（毫秒）
+      example: 487
+
+PagedSystemLogs:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/SystemLog'

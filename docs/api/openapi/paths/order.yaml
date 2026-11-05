@@ -1,0 +1,113 @@
+# 订单模块接口
+# 对应 docs/api/07-order.md。
+
+orders:
+  get:
+    tags: [订单]
+    operationId: listOrders
+    summary: 订单列表（订单号/客户、门店、渠道、状态、日期筛选）
+    description: |
+      按 createdAt 倒序分页返回订单（含商品明细快照）。筛选条件为 AND 关系；
+      startDate/endDate 为闭区间，按 createdAt 的日期部分比较；门店数据权限由 X-Store-Id 控制。
+      业务规则见 docs/api/07-order.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 订单号（包含，忽略大小写）或客户姓名（包含）；空串不参与过滤
+        schema:
+          type: string
+      - name: storeId
+        in: query
+        required: false
+        description: 门店编号，精确匹配（建议前端改传此参数）
+        schema:
+          type: string
+          example: ST007
+      - name: storeName
+        in: query
+        required: false
+        description: 门店名称，精确匹配（前端当前实际传此参数）
+        schema:
+          type: string
+          example: 杭州西湖店
+      - name: channel
+        in: query
+        required: false
+        description: 订单渠道筛选，all=全部
+        schema:
+          type: string
+          enum: [dine-in, takeaway, delivery, all]
+          default: all
+      - name: status
+        in: query
+        required: false
+        description: 订单状态筛选，all=全部
+        schema:
+          type: string
+          enum: [pending, serving, completed, refunded, all]
+          default: all
+      - name: startDate
+        in: query
+        required: false
+        description: 下单开始日期（含当天），与 endDate 组成闭区间
+        schema:
+          type: string
+          format: date
+          example: '2026-11-01'
+      - name: endDate
+        in: query
+        required: false
+        description: 下单结束日期（含当天）
+        schema:
+          type: string
+          format: date
+          example: '2026-11-04'
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/order.yaml#/PagedOrders'
+      '400':
+        description: 参数校验失败（日期格式错误、startDate > endDate、枚举/页码非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限（门店数据权限）
+
+orders-id:
+  get:
+    tags: [订单]
+    operationId: getOrder
+    summary: 订单详情（含商品明细）
+    description: 返回订单完整信息与商品明细；订单不存在返回 404。业务规则见 docs/api/07-order.md。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/order.yaml#/Order'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限（跨门店查看）
+      '404':
+        description: 订单不存在

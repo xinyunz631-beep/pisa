@@ -1,0 +1,196 @@
+# 菜品模块接口
+# 对应 docs/api/06-dish.md。
+
+dishes:
+  get:
+    tags: [菜品]
+    operationId: listDishes
+    summary: 菜品列表（名称/编码、分类、状态筛选）
+    description: 分页返回菜品；筛选条件为 AND 关系，status=all 表示不过滤。业务规则见 docs/api/06-dish.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 菜品名称（包含）或菜品编码（包含，忽略大小写）；空串不参与过滤
+        schema:
+          type: string
+      - name: category
+        in: query
+        required: false
+        description: 分类名称，精确匹配
+        schema:
+          type: string
+          example: 招牌主菜
+      - name: status
+        in: query
+        required: false
+        description: 售卖状态筛选，all=全部
+        schema:
+          type: string
+          enum: ['on', 'off', all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/dish.yaml#/PagedDishes'
+      '400':
+        description: 参数校验失败（page/pageSize/status/category 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限（门店数据权限）
+  post:
+    tags: [菜品]
+    operationId: createDish
+    summary: 新增菜品
+    description: 对应前端 saveDish(input) 未传 id 的分支；id、sales、updatedAt 由服务端生成。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/dish.yaml#/DishInput'
+    responses:
+      '200':
+        description: 成功，返回新增后的完整菜品
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/dish.yaml#/Dish'
+      '400':
+        description: 字段校验失败（名称/分类/价格/成本）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '409':
+        description: 同一分类下菜品名称重复（生产校验）
+
+dishes-categories-options:
+  get:
+    tags: [菜品]
+    operationId: listDishCategories
+    summary: 菜品分类下拉选项
+    description: 返回菜品数据中去重后的分类名称，按首次出现顺序；筛选与新增/编辑表单共用。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: string
+                      example: [招牌主菜, 小炒, 主食, 汤羹, 饮品, 甜品, 凉菜]
+      '401':
+        description: 未登录 / token 失效
+
+dishes-id:
+  put:
+    tags: [菜品]
+    operationId: updateDish
+    summary: 编辑菜品
+    description: 对应前端 saveDish(input) 传 id 的分支；全量更新可编辑字段，不可修改 id/sales/updatedAt。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/dish.yaml#/DishInput'
+    responses:
+      '200':
+        description: 成功，返回更新后的完整菜品
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/dish.yaml#/Dish'
+      '400':
+        description: 字段校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 菜品不存在
+      '409':
+        description: 菜品名称冲突（生产校验）
+  delete:
+    tags: [菜品]
+    operationId: deleteDish
+    summary: 删除菜品
+    description: 生产建议软删除；被进行中订单/有效菜单引用时应拒绝删除。成功 data 为 null。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 菜品不存在
+      '409':
+        description: 菜品被引用，禁止删除（生产校验）
+
+dishes-id-status:
+  patch:
+    tags: [菜品]
+    operationId: updateDishStatus
+    summary: 菜品上架 / 下架
+    description: 列表行内 Switch 切换；幂等，重复设置同一状态返回成功。业务规则见 docs/api/06-dish.md。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/dish.yaml#/DishStatusInput'
+    responses:
+      '200':
+        description: 成功，data 为 null
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: status 非 on/off
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 菜品不存在

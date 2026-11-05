@@ -1,0 +1,295 @@
+# 业务模块 schema（菜单 / 门店 / 配送）
+# 字段与枚举严格对应 docs/api/05-business.md；时间字段按契约统一 YYYY-MM-DD HH:mm:ss
+
+Menu:
+  type: object
+  description: 菜单
+  required: [id, name, storeId, storeName, dishCount, period, status, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 菜单编号，MN + 3 位序号
+      example: MN001
+    name:
+      type: string
+      example: 午市套餐
+    storeId:
+      type: string
+      description: 所属门店编号
+      example: ST001
+    storeName:
+      type: string
+      description: 所属门店名称，只读，由后端按 storeId join 门店表返回（门店改名后同步）
+      example: 上海静安店
+    dishCount:
+      type: integer
+      description: 菜单内菜品数量，只读，由后端统计
+      example: 8
+    period:
+      type: string
+      enum: [morning, noon, evening, all]
+      description: morning=早市，noon=午市，evening=晚市，all=全天
+    status:
+      type: string
+      enum: [online, offline]
+      description: online=已上架，offline=已下架
+    updatedAt:
+      type: string
+      description: 最后更新时间
+      example: '2026-10-07 11:34:00'
+
+MenuInput:
+  type: object
+  description: 菜单新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, storeId, period, status]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 冬季暖锅
+    storeId:
+      type: string
+      description: 所属门店编号，须为存在的门店
+      example: ST001
+    period:
+      type: string
+      enum: [morning, noon, evening, all]
+    status:
+      type: string
+      enum: [online, offline]
+
+PagedMenus:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Menu'
+
+MenuDish:
+  type: object
+  description: 菜单下的菜品（引用菜品主数据，只读）
+  required: [id, name, category, price, status]
+  properties:
+    id:
+      type: string
+      description: 菜品编号，引用菜品主数据
+      example: D025
+    name:
+      type: string
+      example: 担担面
+    category:
+      type: string
+      description: 菜品分类
+      example: 主食
+    price:
+      type: number
+      description: 售价（元）
+      example: 24
+    status:
+      type: string
+      enum: ['on', 'off']
+      description: on=在售，off=已下架；与菜品管理实时一致
+
+BusinessStore:
+  type: object
+  description: 门店
+  required: [id, name, city, address, manager, phone, businessHours, status, openedAt]
+  properties:
+    id:
+      type: string
+      description: 门店编号，ST + 3 位序号
+      example: ST001
+    name:
+      type: string
+      example: 上海静安店
+    city:
+      type: string
+      example: 上海
+    address:
+      type: string
+      example: 静安区南京西路 1266 号
+    manager:
+      type: string
+      description: 店长姓名
+      example: 周明
+    phone:
+      type: string
+      description: 联系电话（11 位手机号）
+      pattern: '^1[3-9]\d{9}$'
+      example: '18694757531'
+    businessHours:
+      type: string
+      description: 营业时间，格式 HH:mm-HH:mm
+      example: 10:30-22:30
+    status:
+      type: string
+      enum: [open, preparing, closed]
+      description: open=营业中，preparing=筹备中，closed=已停业
+    openedAt:
+      type: string
+      format: date
+      description: 开业日期，只读，新增时由后端写入，编辑不变
+      example: '2022-02-21'
+
+BusinessStoreInput:
+  type: object
+  description: 门店新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, city, address, manager, phone, businessHours, status]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 南京河西店
+    city:
+      type: string
+      maxLength: 10
+      example: 南京
+    address:
+      type: string
+      maxLength: 60
+      example: 建邺区江东中路 100 号
+    manager:
+      type: string
+      maxLength: 10
+      example: 陈晨
+    phone:
+      type: string
+      description: 11 位手机号
+      pattern: '^1[3-9]\d{9}$'
+      example: '13812345678'
+    businessHours:
+      type: string
+      maxLength: 20
+      description: 营业时间，格式 HH:mm-HH:mm
+      example: 10:00-22:00
+    status:
+      type: string
+      enum: [open, preparing, closed]
+
+PagedBusinessStores:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/BusinessStore'
+
+DeliveryRule:
+  type: object
+  description: 配送规则
+  required: [id, name, storeId, storeName, rangeKm, minAmount, fee, etaMinutes, status, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 规则编号，DR + 3 位序号
+      example: DR001
+    name:
+      type: string
+      example: 静安店标准配送
+    storeId:
+      type: string
+      description: 所属门店编号
+      example: ST001
+    storeName:
+      type: string
+      description: 所属门店名称，只读，由后端按 storeId join 门店表返回
+      example: 上海静安店
+    rangeKm:
+      type: number
+      description: 配送范围（km），1 位小数
+      example: 3
+    minAmount:
+      type: number
+      description: 起送价（元），2 位小数，0 表示无起送门槛
+      example: 20
+    fee:
+      type: number
+      description: 配送费（元），2 位小数
+      example: 5
+    etaMinutes:
+      type: integer
+      description: 预计送达时长（分钟）
+      example: 30
+    status:
+      type: string
+      enum: [enabled, disabled]
+      description: enabled=启用中，disabled=已停用
+    updatedAt:
+      type: string
+      description: 最后更新时间
+      example: '2026-09-21 20:28:00'
+
+DeliveryRuleInput:
+  type: object
+  description: 配送规则新增 / 编辑入参（编辑时 id 走 Path）
+  required: [name, storeId, rangeKm, minAmount, fee, etaMinutes, status]
+  properties:
+    name:
+      type: string
+      maxLength: 30
+      example: 静安店午间加急配送
+    storeId:
+      type: string
+      description: 所属门店编号，须为存在的门店
+      example: ST001
+    rangeKm:
+      type: number
+      description: 配送范围（km），步长 0.5
+      minimum: 0.5
+      maximum: 20
+      multipleOf: 0.5
+      example: 2
+    minAmount:
+      type: number
+      description: 起送价（元）
+      minimum: 0
+      maximum: 999
+      example: 20
+    fee:
+      type: number
+      description: 配送费（元）
+      minimum: 0
+      maximum: 99
+      example: 5
+    etaMinutes:
+      type: integer
+      description: 预计送达时长（分钟）
+      minimum: 5
+      maximum: 120
+      example: 25
+    status:
+      type: string
+      enum: [enabled, disabled]
+
+PagedDeliveryRules:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/DeliveryRule'
+
+DeliveryOverview:
+  type: object
+  description: 配送概览 KPI（当前为全局口径）
+  required: [todayOrders, avgMinutes, onTimeRate]
+  properties:
+    todayOrders:
+      type: integer
+      description: 今日配送单量（单），统计今日 channel=delivery 的订单数，建议剔除已退款订单
+      example: 15
+    avgMinutes:
+      type: number
+      description: 平均配送时长（分钟），取所有启用规则 etaMinutes 的算术平均，保留 1 位小数
+      example: 30.1
+    onTimeRate:
+      type: number
+      description: 准时率（%），准时送达订单 / 配送总单 × 100，保留 1 位小数
+      example: 96.8

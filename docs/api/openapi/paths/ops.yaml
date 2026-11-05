@@ -1,0 +1,464 @@
+# 售后 / 系统模块接口
+# 对应 docs/api/08-ops.md（售后处理、岗位管理、人员管理、系统日志）。
+
+after-sales:
+  get:
+    tags: [售后]
+    operationId: listAfterSales
+    summary: 售后工单列表（工单号/订单号/客户/门店、状态、类型筛选）
+    description: |
+      按 appliedAt 倒序分页返回售后工单（含商品明细与处理记录）。
+      筛选条件为 AND 关系；status=all、type=all 表示不过滤。
+      状态流转与业务规则见 docs/api/08-ops.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 工单号/订单号（包含，忽略大小写）或客户姓名/门店名称（包含）；空串不参与过滤
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 售后状态筛选，all=全部
+        schema:
+          type: string
+          enum: [pending, processing, done, rejected, all]
+          default: all
+      - name: type
+        in: query
+        required: false
+        description: 售后类型筛选，all=全部
+        schema:
+          type: string
+          enum: [refund, return, exchange, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/PagedAfterSales'
+      '400':
+        description: 参数校验失败（status/type/page/pageSize 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限（门店数据权限）
+
+after-sales-id-audit:
+  post:
+    tags: [售后]
+    operationId: auditAfterSale
+    summary: 售后审核（通过 / 拒绝）
+    description: |
+      单独接口通过 action 区分「通过（approve）」与「拒绝（reject）」：
+      - approve：pending/processing → done，追加处理记录（换货：已安排换货补发；退款/退货：款项已原路退回）；
+      - reject：pending/processing → rejected，追加拒绝记录，建议必填 remark 说明原因；
+      - done/rejected 为终态，重复审核返回 409，不重复退款、不重复追加记录（幂等）。
+      状态流转与幂等要求见 docs/api/08-ops.md。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ops.yaml#/AfterSaleAuditInput'
+    responses:
+      '200':
+        description: 成功，返回审核后的完整工单（status 已变更，records 追加一条）
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/AfterSaleTicket'
+      '400':
+        description: action 非 approve/reject，或 reject 缺少备注（生产校验）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无审核权限
+      '404':
+        description: 售后工单不存在
+      '409':
+        description: 工单已处理完成（终态）或并发审核冲突
+      '500':
+        description: 退款/换货等下游调用失败（生产），状态需回滚
+
+positions:
+  get:
+    tags: [系统]
+    operationId: listPositions
+    summary: 岗位列表（名称、状态筛选）
+    description: 分页返回岗位；keyword 仅匹配岗位名称，status=all 表示不过滤。业务规则见 docs/api/08-ops.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 岗位名称（包含）；空串不参与过滤
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 岗位状态筛选，all=全部
+        schema:
+          type: string
+          enum: [active, disabled, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/PagedPositions'
+      '400':
+        description: 参数校验失败（status/page/pageSize 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无系统管理权限
+  post:
+    tags: [系统]
+    operationId: createPosition
+    summary: 新增岗位
+    description: 对应前端 savePosition(input) 未传 id 的分支；id、staffCount、createdAt 由服务端生成，岗位编码需唯一。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ops.yaml#/PositionInput'
+    responses:
+      '200':
+        description: 成功，返回新增后的岗位
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/Position'
+      '400':
+        description: 字段校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无系统管理权限
+      '409':
+        description: 岗位编码已存在
+
+positions-departments-options:
+  get:
+    tags: [系统]
+    operationId: listPositionDepartments
+    summary: 岗位所属部门下拉选项
+    description: 返回岗位数据中去重后的部门名称，按首次出现顺序；列表筛选与新增/编辑表单共用。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/ops.yaml#/DepartmentOption'
+                      example: [运营中心, 门店运营部, 后厨中心, 供应链中心, 财务部, 人力资源部, 信息技术部]
+      '401':
+        description: 未登录 / token 失效
+
+positions-id:
+  put:
+    tags: [系统]
+    operationId: updatePosition
+    summary: 编辑岗位
+    description: 对应前端 savePosition(input) 传 id 的分支；全量更新名称、编码、部门、状态，编码唯一性校验需排除自身。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ops.yaml#/PositionInput'
+    responses:
+      '200':
+        description: 成功，返回更新后的岗位
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/Position'
+      '400':
+        description: 字段校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无系统管理权限
+      '404':
+        description: 岗位不存在
+      '409':
+        description: 岗位编码已被其他岗位占用
+  delete:
+    tags: [系统]
+    operationId: deletePosition
+    summary: 删除岗位
+    description: 岗位仍有人员绑定时应拒绝删除（409）；成功 data 为 null。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无系统管理权限
+      '404':
+        description: 岗位不存在
+      '409':
+        description: 岗位下仍有在岗人员，禁止删除
+
+staff:
+  get:
+    tags: [系统]
+    operationId: listStaff
+    summary: 人员列表（姓名/工号/手机号、岗位、门店、状态筛选）
+    description: 分页返回人员；position/storeName 为名称精确匹配，status=all 表示不过滤。业务规则见 docs/api/08-ops.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 姓名（包含）、工号（包含，忽略大小写）、手机号（包含）任一命中；空串不参与过滤
+        schema:
+          type: string
+      - name: position
+        in: query
+        required: false
+        description: 岗位名称，精确匹配
+        schema:
+          type: string
+          example: 收银员
+      - name: storeName
+        in: query
+        required: false
+        description: 所属门店名称，精确匹配
+        schema:
+          type: string
+          example: 上海静安店
+      - name: status
+        in: query
+        required: false
+        description: 人员状态筛选，all=全部
+        schema:
+          type: string
+          enum: [active, disabled, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/PagedStaff'
+      '400':
+        description: 参数校验失败（status/page/pageSize 非法）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限（门店数据权限）
+  post:
+    tags: [系统]
+    operationId: createStaff
+    summary: 新增人员
+    description: 对应前端 saveStaff(input) 未传 id 的分支；id、email、role、lastLogin、loginIp 由服务端生成，工号需唯一。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ops.yaml#/StaffInput'
+    responses:
+      '200':
+        description: 成功，返回新增后的人员
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/Staff'
+      '400':
+        description: 字段校验失败（手机号、入职日期、岗位/门店不存在等）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '409':
+        description: 工号已存在
+
+staff-form-options:
+  get:
+    tags: [系统]
+    operationId: getStaffFormOptions
+    summary: 人员表单选项（岗位 / 门店 / 角色）
+    description: 人员新增/编辑表单与列表筛选共用；Mock 中岗位来自岗位数据、门店与角色来自人员数据去重。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/StaffFormOptions'
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无系统管理权限
+
+staff-id:
+  put:
+    tags: [系统]
+    operationId: updateStaff
+    summary: 编辑人员
+    description: 对应前端 saveStaff(input) 传 id 的分支；可改姓名、工号、手机号、岗位、门店、状态、入职日期，email/role/lastLogin/loginIp 不可修改。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/ops.yaml#/StaffInput'
+    responses:
+      '200':
+        description: 成功，返回更新后的人员
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/Staff'
+      '400':
+        description: 字段校验失败
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无权限
+      '404':
+        description: 人员不存在
+      '409':
+        description: 工号已被其他人员占用
+
+logs:
+  get:
+    tags: [系统]
+    operationId: listSystemLogs
+    summary: 系统日志列表（操作人/模块、操作类型、时间范围筛选）
+    description: |
+      只读接口，按 time 倒序分页返回；不提供新增/编辑/删除接口。
+      日期区间为闭区间，按 time 的日期部分比较；业务规则见 docs/api/08-ops.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 操作人（包含）或所属模块（包含）；空串不参与过滤
+        schema:
+          type: string
+      - name: action
+        in: query
+        required: false
+        description: 操作类型筛选，all=全部
+        schema:
+          type: string
+          enum: [create, update, delete, login, export, all]
+          default: all
+      - name: startDate
+        in: query
+        required: false
+        description: 操作开始日期（含当天）
+        schema:
+          type: string
+          format: date
+          example: '2026-11-01'
+      - name: endDate
+        in: query
+        required: false
+        description: 操作结束日期（含当天）
+        schema:
+          type: string
+          format: date
+          example: '2026-11-04'
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/ops.yaml#/PagedSystemLogs'
+      '400':
+        description: 参数校验失败（action/日期格式/页码非法，或 startDate > endDate）
+      '401':
+        description: 未登录 / token 失效
+      '403':
+        description: 无审计权限

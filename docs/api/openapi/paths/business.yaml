@@ -1,0 +1,413 @@
+# 业务模块接口（菜单 / 门店 / 配送）
+# 键名与 openapi.yaml 引用固定一致；字段与业务规则见 docs/api/05-business.md
+# 门店下拉选项 GET /api/v1/stores/options 由 paths/dashboard.yaml#/stores-options 提供（跨模块公共）
+
+menus:
+  get:
+    tags: [业务]
+    operationId: listMenus
+    summary: 菜单列表
+    description: 支持按菜单名称 / 门店名关键词、所属门店、上下架状态筛选，分页返回。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 菜单名称或所属门店名模糊匹配
+        schema:
+          type: string
+      - name: storeId
+        in: query
+        required: false
+        description: 所属门店编号，省略表示全部门店
+        schema:
+          type: string
+          example: ST001
+      - name: status
+        in: query
+        required: false
+        description: 菜单状态，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [online, offline, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/PagedMenus'
+      '400':
+        description: 参数校验失败（非法枚举 / 门店编号格式错误）
+      '403':
+        description: 无门店数据权限
+  post:
+    tags: [业务]
+    operationId: createMenu
+    summary: 新增菜单
+    description: 新增菜单；id、storeName、dishCount、updatedAt 由后端生成与统计，新增菜单 dishCount 为 0。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/MenuInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的菜单对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/Menu'
+      '400':
+        description: 参数校验失败（门店不存在等）
+      '409':
+        description: 同门店菜单名称重复
+
+menus-id:
+  put:
+    tags: [业务]
+    operationId: updateMenu
+    summary: 编辑菜单
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/MenuInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的菜单对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/Menu'
+      '400':
+        description: 参数校验失败（门店不存在等）
+      '404':
+        description: 菜单不存在或已被删除
+      '409':
+        description: 同门店菜单名称重复
+  delete:
+    tags: [业务]
+    operationId: deleteMenu
+    summary: 删除菜单
+    description: 级联删除菜单-菜品关联记录，不删除菜品主数据；建议仅允许删除已下架菜单。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 菜单不存在（严格语义；幂等实现可直接返回成功）
+      '409':
+        description: 上架中 / 被引用的菜单不可删除
+
+menus-id-dishes:
+  get:
+    tags: [业务]
+    operationId: listMenuDishes
+    summary: 菜单菜品清单
+    description: 返回菜单下全部关联菜品（不分页），条数与菜单 dishCount 一致；菜品主数据见 docs/api/06-dish.md。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/business.yaml#/MenuDish'
+      '404':
+        description: 菜单不存在
+
+stores:
+  get:
+    tags: [业务]
+    operationId: listBusinessStores
+    summary: 门店列表
+    description: 支持按门店名称 / 城市 / 编号关键词与营业状态筛选，分页返回；门店下拉选项复用 GET /api/v1/stores/options。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 门店名称、城市或门店编号（忽略大小写）模糊匹配
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 营业状态，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [open, preparing, closed, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/PagedBusinessStores'
+      '400':
+        description: 参数校验失败
+      '403':
+        description: 无门店数据权限
+  post:
+    tags: [业务]
+    operationId: createBusinessStore
+    summary: 新增门店
+    description: 新增门店；id 与 openedAt 由后端生成（openedAt 取当天日期）。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/BusinessStoreInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的门店对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/BusinessStore'
+      '400':
+        description: 参数校验失败（手机号格式等）
+      '409':
+        description: 门店名称重复
+
+stores-id:
+  put:
+    tags: [业务]
+    operationId: updateBusinessStore
+    summary: 编辑门店
+    description: 门店状态随编辑接口提交；openedAt 只读，编辑不修改。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/BusinessStoreInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的门店对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/BusinessStore'
+      '400':
+        description: 参数校验失败（手机号格式等）
+      '404':
+        description: 门店不存在或已被删除
+      '409':
+        description: 门店名称重复
+  delete:
+    tags: [业务]
+    operationId: deleteBusinessStore
+    summary: 删除门店
+    description: 门店存在菜单、配送规则、订单、员工等关联数据时应拒绝删除，引导改为「已停业」。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 门店不存在（严格语义；幂等实现可直接返回成功）
+      '409':
+        description: 门店存在关联数据，不可删除
+
+delivery-rules:
+  get:
+    tags: [业务]
+    operationId: listDeliveryRules
+    summary: 配送规则列表
+    description: 支持按门店与启用状态筛选，分页返回；门店名由后端按 storeId join 实时解析。
+    parameters:
+      - name: storeId
+        in: query
+        required: false
+        description: 所属门店编号，省略表示全部门店
+        schema:
+          type: string
+          example: ST001
+      - name: status
+        in: query
+        required: false
+        description: 规则状态，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [enabled, disabled, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/PagedDeliveryRules'
+      '400':
+        description: 参数校验失败
+      '403':
+        description: 无门店数据权限
+  post:
+    tags: [业务]
+    operationId: createDeliveryRule
+    summary: 新增配送规则
+    description: 新增配送规则；id、storeName、updatedAt 由后端生成与回填。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/DeliveryRuleInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的配送规则对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/DeliveryRule'
+      '400':
+        description: 参数校验失败（门店不存在等）
+      '409':
+        description: 同门店规则名称重复
+
+delivery-rules-id:
+  put:
+    tags: [业务]
+    operationId: updateDeliveryRule
+    summary: 编辑配送规则
+    description: 修改后「平均配送时长」概览会同步变化。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/business.yaml#/DeliveryRuleInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的配送规则对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/DeliveryRule'
+      '400':
+        description: 参数校验失败（门店不存在等）
+      '404':
+        description: 配送规则不存在或已被删除
+      '409':
+        description: 同门店规则名称重复
+  delete:
+    tags: [业务]
+    operationId: deleteDeliveryRule
+    summary: 删除配送规则
+    description: 删除后配送概览的平均配送时长需重新计算。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 配送规则不存在（严格语义；幂等实现可直接返回成功）
+      '409':
+        description: 门店唯一启用规则不可删除
+
+delivery-overview:
+  get:
+    tags: [业务]
+    operationId: getDeliveryOverview
+    summary: 配送概览 KPI
+    description: 今日配送单量、平均配送时长、准时率；当前为全局口径（前端未按门店筛选）。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/business.yaml#/DeliveryOverview'
+      '401':
+        description: 未登录 / token 失效

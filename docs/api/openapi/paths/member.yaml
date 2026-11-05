@@ -1,0 +1,287 @@
+# 会员模块接口
+
+members:
+  get:
+    tags: [会员]
+    operationId: listMembers
+    summary: 会员列表（手机号 / 会员号查询）
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 手机号或会员号，模糊匹配
+        schema:
+          type: string
+      - name: level
+        in: query
+        required: false
+        description: 等级名称，精确匹配
+        schema:
+          type: string
+          example: 金卡会员
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+      - $ref: '../schemas/common.yaml#/parameters/StoreIdHeader'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/PagedMembers'
+
+members-levels:
+  get:
+    tags: [会员]
+    operationId: listMemberLevelNames
+    summary: 会员等级筛选项
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: string
+                      example: [普通会员, 银卡会员, 金卡会员, 黑卡会员]
+
+member-levels:
+  get:
+    tags: [会员]
+    operationId: listMemberLevels
+    summary: 等级配置列表
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/member.yaml#/MemberLevelConfig'
+  post:
+    tags: [会员]
+    operationId: createMemberLevel
+    summary: 新增等级配置
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/member.yaml#/MemberLevelInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的等级对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/MemberLevelConfig'
+      '400':
+        description: 参数校验失败 / 门槛冲突
+      '409':
+        description: 等级名称重复
+
+member-levels-id:
+  put:
+    tags: [会员]
+    operationId: updateMemberLevel
+    summary: 编辑等级配置
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/member.yaml#/MemberLevelInput'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/MemberLevelConfig'
+      '404':
+        description: 等级不存在
+
+member-tags:
+  get:
+    tags: [会员]
+    operationId: listMemberTags
+    summary: 标签列表
+    description: 数据量小，Mock 一次性返回全量数组，前端做前端分页。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 标签名称模糊匹配
+        schema:
+          type: string
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [人群价值, 行为, 人口属性]
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [auto, manual]
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [enabled, disabled, all]
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/member.yaml#/MemberTagConfig'
+  post:
+    tags: [会员]
+    operationId: createMemberTag
+    summary: 新建标签
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/member.yaml#/MemberTagInput'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/MemberTagConfig'
+      '400':
+        description: 自动标签缺少条件
+      '409':
+        description: 标签名重复
+
+member-tags-id:
+  put:
+    tags: [会员]
+    operationId: updateMemberTag
+    summary: 编辑标签
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/member.yaml#/MemberTagInput'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/MemberTagConfig'
+      '404':
+        description: 标签不存在
+  delete:
+    tags: [会员]
+    operationId: deleteMemberTag
+    summary: 删除标签
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '409':
+        description: 标签已被营销计划引用，禁止删除
+
+member-tags-id-status:
+  patch:
+    tags: [会员]
+    operationId: updateMemberTagStatus
+    summary: 标签启用 / 停用
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/member.yaml#/TagStatusInput'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 标签不存在
+
+member-tags-condition-fields:
+  get:
+    tags: [会员]
+    operationId: getMemberTagConditionFields
+    summary: 自动标签条件指标与运算符字典
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/member.yaml#/ConditionFields'

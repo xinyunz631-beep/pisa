@@ -1,0 +1,11 @@
+# Redocly 校验配置：收紧开放 API 文档的 lint 规则
+extends:
+  - recommended
+
+rules:
+  # 项目为内部原型，暂不声明开源协议
+  info-license: off
+  # servers 使用占位域名（生产地址未知），该规则会误报
+  no-server-example.com: off
+  # 错误通过统一响应包裹 { code, message } 表达，HTTP 状态码不强制每接口都列 4xx
+  operation-4xx-response: off

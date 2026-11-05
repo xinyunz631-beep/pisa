@@ -1,0 +1,249 @@
+# 会员模块 schema
+
+Member:
+  type: object
+  description: 会员信息
+  required: [id, memberNo, nickname, phone, level, points, status]
+  properties:
+    id:
+      type: string
+      example: MB0001
+    memberNo:
+      type: string
+      description: 会员号，唯一
+      example: M100001
+    nickname:
+      type: string
+      example: 小鹿
+    phone:
+      type: string
+      example: '13595884769'
+    level:
+      type: string
+      description: 当前等级名称，与等级配置 name 对应
+      example: 金卡会员
+    points:
+      type: integer
+      description: 当前可用积分
+      example: 19188
+    totalSpent:
+      type: number
+      description: 累计消费金额（元）
+      example: 18201
+    orderCount:
+      type: integer
+      description: 累计消费次数
+      example: 42
+    lastVisit:
+      type: string
+      description: 最近消费时间
+      example: '2026-10-10 17:37:00'
+    joinedAt:
+      type: string
+      description: 注册日期
+      example: '2024-03-18'
+    birthday:
+      type: string
+      example: '1995-07-09'
+    tags:
+      type: array
+      items:
+        type: string
+      example: [高频到店, 周末消费]
+    status:
+      type: string
+      enum: [active, frozen]
+      description: active=正常，frozen=已冻结
+
+PagedMembers:
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/Member'
+
+MemberLevelConfig:
+  type: object
+  description: 等级配置
+  required: [id, name, order, upgradeType, discount, pointsRate]
+  properties:
+    id:
+      type: string
+      example: LV2
+    name:
+      type: string
+      example: 银卡会员
+    order:
+      type: integer
+      description: 等级序号，用于排序
+      example: 2
+    upgradeType:
+      type: string
+      enum: [amount, frequency, either]
+      description: amount=按累计消费金额，frequency=按消费频次，either=满足任一
+    minAmount:
+      type: number
+      description: 累计消费门槛（元），upgradeType=frequency 时忽略
+      example: 2000
+    minFrequency:
+      type: integer
+      description: 消费频次门槛（次），upgradeType=amount 时忽略
+      example: 15
+    discount:
+      type: number
+      description: 会员折扣，10 表示不打折，9.5 表示 9.5 折
+      example: 9.5
+    pointsRate:
+      type: number
+      description: 积分倍率
+      example: 1.2
+    memberCount:
+      type: integer
+      description: 当前该等级会员数
+      example: 6
+    description:
+      type: string
+      example: 累计消费满 2000 元，或消费满 15 次自动升级。
+
+MemberLevelInput:
+  type: object
+  required: [name, upgradeType, discount, pointsRate]
+  properties:
+    name:
+      type: string
+      maxLength: 10
+      example: 钻石会员
+    upgradeType:
+      type: string
+      enum: [amount, frequency, either]
+    minAmount:
+      type: number
+      minimum: 0
+      description: upgradeType ∈ {amount, either} 时必填
+    minFrequency:
+      type: integer
+      minimum: 0
+      description: upgradeType ∈ {frequency, either} 时必填
+    discount:
+      type: number
+      minimum: 1
+      maximum: 10
+    pointsRate:
+      type: number
+      minimum: 0.1
+      maximum: 10
+    description:
+      type: string
+      maxLength: 120
+
+TagCondition:
+  type: object
+  required: [field, operator, value]
+  properties:
+    field:
+      type: string
+      description: 条件指标
+      enum: [累计消费金额, 消费频次, 最近消费距今天数, 注册天数, 会员等级, 所在城市, 生日月份]
+    operator:
+      type: string
+      enum: ['≥', '≤', '=', '≠']
+    value:
+      type: string
+      example: '50000'
+
+MemberTagConfig:
+  type: object
+  description: 会员标签
+  required: [id, name, category, type, status]
+  properties:
+    id:
+      type: string
+      example: TG01
+    name:
+      type: string
+      example: 高价值客户
+    category:
+      type: string
+      enum: [人群价值, 行为, 人口属性]
+    type:
+      type: string
+      enum: [auto, manual]
+      description: auto=自动标签（数仓计算），manual=手动标签
+    conditions:
+      type: array
+      description: 自动标签条件，AND 关系；手动标签为空数组
+      items:
+        $ref: '#/TagCondition'
+    updateFrequency:
+      type: string
+      enum: [daily, weekly, manual]
+    coverage:
+      type: integer
+      description: 当前命中人群数（ClickHouse 计算）
+      example: 1286
+    updatedAt:
+      type: string
+      example: '2026-11-04 03:00:00'
+    status:
+      type: string
+      enum: [enabled, disabled]
+
+MemberTagInput:
+  type: object
+  required: [name, category, type]
+  properties:
+    name:
+      type: string
+      maxLength: 20
+    category:
+      type: string
+      enum: [人群价值, 行为, 人口属性]
+    type:
+      type: string
+      enum: [auto, manual]
+    conditions:
+      type: array
+      description: type=auto 时至少 1 条
+      items:
+        $ref: '#/TagCondition'
+    updateFrequency:
+      type: string
+      enum: [daily, weekly]
+      description: type=auto 时必填；manual 固定 manual
+
+TagStatusInput:
+  type: object
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: [enabled, disabled]
+
+ConditionFieldOption:
+  type: object
+  properties:
+    label:
+      type: string
+      example: 累计消费金额
+    value:
+      type: string
+      example: 累计消费金额
+    type:
+      type: string
+      enum: [number, enum, string, month]
+
+ConditionFields:
+  type: object
+  properties:
+    fields:
+      type: array
+      items:
+        $ref: '#/ConditionFieldOption'
+    operators:
+      type: array
+      items:
+        type: string
+      example: ['≥', '≤', '=', '≠']

@@ -17,6 +17,24 @@
 | [07-order.md](./07-order.md) | 订单 | `services/order.ts` | 订单查询 |
 | [08-ops.md](./08-ops.md) | 订单 / 系统 | `services/ops.ts` | 售后处理、岗位管理、人员管理、系统日志 |
 
+## OpenAPI 规范（机器可读）
+
+Markdown 契约之外，提供一份 OpenAPI 3.0.3 规范，可直接导入 Swagger UI / Postman / Apifox 调试：
+
+```
+docs/api/openapi/
+├── openapi.yaml            # 入口：info / servers / security / tags / 全部 paths 索引
+├── paths/                  # 按模块拆分的路径定义（dashboard/member/marketing/assets/business/dish/order/ops）
+└── schemas/                # 数据模型与公共片段（common.yaml：ApiEnvelope、Pagination、公共参数）
+```
+
+```bash
+npm run docs:lint      # Redocly 校验（结构与引用合法性）
+npm run docs:preview   # 本地启动文档预览（Redocly Dev Portal）
+```
+
+校验与链接检查已接入 GitHub Actions（`.github/workflows/ci.yml`）：每次 push / PR 自动跑前端构建、OpenAPI 校验、Markdown 链接检查。
+
 ## 通用约定
 
 ### 基础信息

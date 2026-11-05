@@ -1,0 +1,473 @@
+# 资产模块接口（卡券 / 积分 / 券包）
+# 键名与 openapi.yaml 引用固定一致；字段与业务规则见 docs/api/04-assets.md
+
+coupons:
+  get:
+    tags: [资产]
+    operationId: listCoupons
+    summary: 卡券列表
+    description: 支持按券名称 / 券编号关键词、券类型、状态筛选，分页返回；统计口径见 docs/api/04-assets.md。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 券名称模糊匹配，或券编号（忽略大小写）模糊匹配
+        schema:
+          type: string
+          example: 满
+      - name: type
+        in: query
+        required: false
+        description: 券类型，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [cash, discount, exchange, all]
+          default: all
+      - name: status
+        in: query
+        required: false
+        description: 卡券状态，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [active, ended, disabled, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PagedCoupons'
+      '400':
+        description: 参数校验失败（非法枚举 / pageSize 超过 100）
+  post:
+    tags: [资产]
+    operationId: createCoupon
+    summary: 新增卡券
+    description: 新增卡券；id、claimed、used 由后端生成与维护，新增后 status 固定为 active。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/CouponInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的卡券对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/Coupon'
+      '400':
+        description: 参数校验失败（value 与 type 不匹配、validTo 早于 validFrom、total 小于已领取数等）
+      '409':
+        description: 券名称重复
+
+coupons-id:
+  put:
+    tags: [资产]
+    operationId: updateCoupon
+    summary: 编辑卡券
+    description: 只修改券主体字段，不修改 claimed / used / status（停用走 PATCH /status）。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/CouponInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的卡券对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/Coupon'
+      '400':
+        description: 参数校验失败（value 与 type 不匹配、validTo 早于 validFrom 等）
+      '404':
+        description: 卡券不存在
+      '409':
+        description: 券名称重复 / 状态冲突
+  delete:
+    tags: [资产]
+    operationId: deleteCoupon
+    summary: 删除卡券
+    description: 删除卡券；已被券包引用或已有核销记录时建议拒绝删除。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 卡券不存在（严格语义；幂等实现可直接返回成功）
+      '409':
+        description: 被券包引用 / 已有核销记录，不可删除
+
+coupons-id-status:
+  patch:
+    tags: [资产]
+    operationId: updateCouponStatus
+    summary: 卡券状态变更
+    description: 页面「停用」按钮使用 active → disabled；ended 建议为终态，不可再启用。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status:
+                type: string
+                enum: [active, ended, disabled]
+                description: 目标状态（active=进行中，ended=已结束，disabled=已停用）
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '400':
+        description: 非法状态值
+      '404':
+        description: 卡券不存在
+      '409':
+        description: 非法状态流转（如已结束券重新启用）
+
+coupons-stats:
+  get:
+    tags: [资产]
+    operationId: getCardStats
+    summary: 卡券 KPI 统计
+    description: 返回总发行量、已领取、已核销与核销率，口径为全量卡券，与列表筛选无关。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/CardStats'
+      '401':
+        description: 未登录 / token 失效
+coupons-options:
+  get:
+    tags: [资产]
+    operationId: listCouponOptions
+    summary: 券下拉选项
+    description: 券包表单「包含券」多选数据源；Mock 返回全部卡券（含已结束 / 已停用），后端可扩展 ?status=active 过滤。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        $ref: '../schemas/assets.yaml#/CouponOption'
+      '401':
+        description: 未登录 / token 失效
+points-overview:
+  get:
+    tags: [资产]
+    operationId: getPointOverview
+    summary: 积分概览 KPI
+    description: 累计发放、累计消耗、当前流通积分；流通 = 发放 - 消耗 - 过期。
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PointOverview'
+      '401':
+        description: 未登录 / token 失效
+points-rules:
+  get:
+    tags: [资产]
+    operationId: listPointRules
+    summary: 积分规则列表
+    description: 支持按规则名称关键词与触发场景筛选，分页返回。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 规则名称模糊匹配
+        schema:
+          type: string
+      - name: scene
+        in: query
+        required: false
+        description: 触发场景，省略表示全部（无 all 值）
+        schema:
+          type: string
+          enum: [consume, review, checkin, register]
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PagedPointRules'
+      '400':
+        description: 参数校验失败
+  post:
+    tags: [资产]
+    operationId: createPointRule
+    summary: 新增积分规则
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/PointRuleInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的规则对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PointRule'
+      '400':
+        description: 参数校验失败
+      '409':
+        description: 规则名称重复
+
+points-rules-id:
+  put:
+    tags: [资产]
+    operationId: updatePointRule
+    summary: 编辑积分规则
+    description: 同时用于启用 / 停用（提交 enabled），无独立状态接口。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/PointRuleInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的规则对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PointRule'
+      '400':
+        description: 参数校验失败
+      '404':
+        description: 积分规则不存在
+      '409':
+        description: 规则名称重复
+
+points-records:
+  get:
+    tags: [资产]
+    operationId: listPointRecords
+    summary: 积分流水列表
+    description: 只读流水，支持按会员昵称 / 备注关键词与变动类型筛选，按变动时间倒序。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 会员昵称或流水备注模糊匹配
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        description: 变动类型，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [earn, spend, expire, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PagedPointRecords'
+      '400':
+        description: 参数校验失败
+
+coupon-packages:
+  get:
+    tags: [资产]
+    operationId: listCouponPackages
+    summary: 券包列表
+    description: 支持按券包名称 / 编号关键词与状态筛选，分页返回。
+    parameters:
+      - name: keyword
+        in: query
+        required: false
+        description: 券包名称模糊匹配，或券包编号（忽略大小写）模糊匹配
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: 券包状态，all 或省略表示不过滤
+        schema:
+          type: string
+          enum: [active, ended, disabled, all]
+          default: all
+      - $ref: '../schemas/common.yaml#/parameters/Page'
+      - $ref: '../schemas/common.yaml#/parameters/PageSize'
+    responses:
+      '200':
+        description: 成功
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/PagedCouponPackages'
+      '400':
+        description: 参数校验失败
+  post:
+    tags: [资产]
+    operationId: createCouponPackage
+    summary: 新增券包
+    description: 新增券包；id 与 claimed 由后端生成（claimed 初始为 0）。
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/PackageInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的券包对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/CouponPackage'
+      '400':
+        description: 参数校验失败（卡券不存在、couponIds 为空或重复、validTo 早于 validFrom 等）
+      '409':
+        description: 券包名称重复
+
+coupon-packages-id:
+  put:
+    tags: [资产]
+    operationId: updateCouponPackage
+    summary: 编辑券包
+    description: 券包状态的唯一修改入口（通过编辑接口提交 status），不修改 claimed。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/assets.yaml#/PackageInput'
+    responses:
+      '200':
+        description: 成功，返回保存后的券包对象
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '../schemas/common.yaml#/ApiEnvelope'
+                - type: object
+                  properties:
+                    data:
+                      $ref: '../schemas/assets.yaml#/CouponPackage'
+      '400':
+        description: 参数校验失败（卡券不存在、couponIds 为空或重复等）
+      '404':
+        description: 券包不存在
+      '409':
+        description: 券包名称重复 / 已发放券包不可改券
+  delete:
+    tags: [资产]
+    operationId: deleteCouponPackage
+    summary: 删除券包
+    description: 删除券包；已产生领取记录时建议改为停用而非删除。
+    parameters:
+      - $ref: '../schemas/common.yaml#/parameters/IdPath'
+    responses:
+      '200':
+        description: 成功（data 为 null）
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ApiEnvelope'
+      '404':
+        description: 券包不存在（严格语义；幂等实现可直接返回成功）
+      '409':
+        description: 已发放券包不可删除

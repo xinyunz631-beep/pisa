@@ -1,0 +1,622 @@
+# 营销模块 schema
+
+ReductionRule:
+  type: object
+  description: 满减规则档位
+  required: [threshold, reduce]
+  properties:
+    threshold:
+      type: number
+      description: 门槛金额（元），整数且 ≥ 1
+      minimum: 1
+      example: 99
+    reduce:
+      type: number
+      description: 减免金额（元），整数且 ≥ 1，且小于同档 threshold
+      minimum: 1
+      example: 10
+
+FullReductionActivity:
+  type: object
+  description: 满减活动
+  required: [id, name, storeIds, storeNames, startAt, endAt, rules, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: 满减活动 ID，FR 前缀 + 3 位序号
+      example: FR001
+    name:
+      type: string
+      description: 活动名称
+      example: 国庆满减狂欢
+    storeIds:
+      type: array
+      description: 适用门店 ID 列表，取值来自 GET /api/v1/stores/options 的 value；长度等于门店选项总数时前端展示「全部门店」
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [ST001, ST003]
+    storeNames:
+      type: array
+      readOnly: true
+      description: 只读冗余门店名称，后端按 storeIds join 门店表返回，不参与写入
+      items:
+        type: string
+      example: [上海静安店, 北京朝阳店]
+    startAt:
+      type: string
+      description: 活动开始时间，格式 YYYY-MM-DD HH:mm:ss
+      example: '2026-09-25 00:00:00'
+    endAt:
+      type: string
+      description: 活动结束时间，格式 YYYY-MM-DD HH:mm:ss，须晚于 startAt
+      example: '2026-11-04 23:59:00'
+    rules:
+      type: array
+      description: 满减规则档位，按 threshold 升序，至少 1 档
+      minItems: 1
+      items:
+        $ref: '#/ReductionRule'
+    status:
+      type: string
+      description: 活动状态，disabled 优先于时间窗口派生
+      enum: [notStarted, running, ended, disabled]
+      example: running
+    createdAt:
+      type: string
+      description: 创建时间，仅新增时由服务端生成，编辑不得修改
+      example: '2026-09-20 10:33:00'
+
+PagedFullReductions:
+  type: object
+  description: 满减活动分页结果
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/FullReductionActivity'
+
+FullReductionInput:
+  type: object
+  description: 满减活动新增 / 编辑入参（POST 新增，PUT 编辑）
+  required: [name, storeIds, startAt, endAt, rules, status]
+  properties:
+    id:
+      type: string
+      description: 活动 ID；PUT 时以路径参数为准，Body 中可省略，POST 时忽略
+      example: FR025
+    name:
+      type: string
+      description: 活动名称，trim 后非空
+      maxLength: 30
+      example: 双十二会员满减
+    storeIds:
+      type: array
+      description: 适用门店 ID，至少 1 个且去重，全部门店时传全部门店 ID
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [ST001, ST003]
+    startAt:
+      type: string
+      description: 开始时间，格式 YYYY-MM-DD HH:mm:ss
+      example: '2026-12-01 00:00:00'
+    endAt:
+      type: string
+      description: 结束时间，格式 YYYY-MM-DD HH:mm:ss，须晚于 startAt
+      example: '2026-12-12 23:59:00'
+    rules:
+      type: array
+      description: 满减规则，至少 1 档；threshold 整数 ≥ 1，reduce 整数 ≥ 1 且小于同档 threshold，建议按 threshold 升序
+      minItems: 1
+      items:
+        $ref: '#/ReductionRule'
+    status:
+      type: string
+      description: 活动状态，保存时以请求体为准，不做时间派生
+      enum: [notStarted, running, ended, disabled]
+      example: notStarted
+
+DiscountRule:
+  type: object
+  description: 满折规则档位
+  required: [threshold, discount]
+  properties:
+    threshold:
+      type: number
+      description: 门槛金额（元），整数且 ≥ 1
+      minimum: 1
+      example: 299
+    discount:
+      type: number
+      description: 折扣，满足 0 < discount < 10，保留 1 位小数；8.5 表示 8.5 折
+      minimum: 0.1
+      maximum: 9.9
+      example: 9.5
+
+FullDiscountActivity:
+  type: object
+  description: 满折活动
+  required: [id, name, storeIds, storeNames, startAt, endAt, rules, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: 满折活动 ID，FD 前缀 + 3 位序号
+      example: FD001
+    name:
+      type: string
+      description: 活动名称
+      example: 中秋满折特惠
+    storeIds:
+      type: array
+      description: 适用门店 ID 列表，取值来自 GET /api/v1/stores/options 的 value；长度等于门店选项总数时前端展示「全部门店」
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [ST006, ST007, ST005]
+    storeNames:
+      type: array
+      readOnly: true
+      description: 只读冗余门店名称，后端按 storeIds join 门店表返回，不参与写入
+      items:
+        type: string
+      example: [深圳南山店, 杭州西湖店, 广州天河店]
+    startAt:
+      type: string
+      description: 活动开始时间，格式 YYYY-MM-DD HH:mm:ss
+      example: '2026-10-18 00:00:00'
+    endAt:
+      type: string
+      description: 活动结束时间，格式 YYYY-MM-DD HH:mm:ss，须晚于 startAt
+      example: '2026-11-04 23:59:00'
+    rules:
+      type: array
+      description: 满折规则档位，按 threshold 升序，至少 1 档
+      minItems: 1
+      items:
+        $ref: '#/DiscountRule'
+    status:
+      type: string
+      description: 活动状态，disabled 优先于时间窗口派生
+      enum: [notStarted, running, ended, disabled]
+      example: running
+    createdAt:
+      type: string
+      description: 创建时间，仅新增时由服务端生成，编辑不得修改
+      example: '2026-10-17 16:17:00'
+
+PagedFullDiscounts:
+  type: object
+  description: 满折活动分页结果
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/FullDiscountActivity'
+
+FullDiscountInput:
+  type: object
+  description: 满折活动新增 / 编辑入参（POST 新增，PUT 编辑）
+  required: [name, storeIds, startAt, endAt, rules, status]
+  properties:
+    id:
+      type: string
+      description: 活动 ID；PUT 时以路径参数为准，Body 中可省略，POST 时忽略
+      example: FD021
+    name:
+      type: string
+      description: 活动名称，trim 后非空
+      maxLength: 30
+      example: 双十二会员满折
+    storeIds:
+      type: array
+      description: 适用门店 ID，至少 1 个且去重，全部门店时传全部门店 ID
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [ST001, ST006]
+    startAt:
+      type: string
+      description: 开始时间，格式 YYYY-MM-DD HH:mm:ss
+      example: '2026-12-01 00:00:00'
+    endAt:
+      type: string
+      description: 结束时间，格式 YYYY-MM-DD HH:mm:ss，须晚于 startAt
+      example: '2026-12-12 23:59:00'
+    rules:
+      type: array
+      description: 满折规则，至少 1 档；threshold 整数 ≥ 1，discount 满足 0 < discount < 10，建议按 threshold 升序
+      minItems: 1
+      items:
+        $ref: '#/DiscountRule'
+    status:
+      type: string
+      description: 活动状态，保存时以请求体为准，不做时间派生
+      enum: [notStarted, running, ended, disabled]
+      example: notStarted
+
+CouponTask:
+  type: object
+  description: 发券任务
+  required: [id, name, couponId, couponName, audiences, planned, claimed, validFrom, validTo, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: 发券任务 ID，CP 前缀 + 3 位序号（与卡券 ID 是两套独立编号）
+      example: CP001
+    name:
+      type: string
+      description: 任务名称
+      example: 双十一新客拉新
+    couponId:
+      type: string
+      description: 发放卡券 ID，引用资产模块卡券（GET /api/v1/coupons/options 的 id）
+      example: CP001
+    couponName:
+      type: string
+      readOnly: true
+      description: 只读冗余卡券名称，后端按 couponId join 卡券表返回，不参与写入
+      example: 新客立减券
+    audiences:
+      type: array
+      description: 发放人群标签名称列表，至少 1 个且去重，取值来自 GET /api/v1/marketing/audience-tags
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [周末消费, 高频到店, 生日本月]
+    planned:
+      type: number
+      description: 计划发放数量（张），整数，范围 1 ~ 100000
+      minimum: 1
+      maximum: 100000
+      example: 8000
+    claimed:
+      type: number
+      readOnly: true
+      description: 已领取数量（张），由后端累计，满足 0 ≤ claimed ≤ planned
+      minimum: 0
+      example: 6016
+    validFrom:
+      type: string
+      description: 券有效期开始日，格式 YYYY-MM-DD
+      example: '2026-10-28'
+    validTo:
+      type: string
+      description: 券有效期结束日，格式 YYYY-MM-DD，不得早于 validFrom
+      example: '2026-11-04'
+    status:
+      type: string
+      description: 任务状态，新建任务固定 running
+      enum: [running, ended, paused]
+      example: running
+    createdAt:
+      type: string
+      description: 创建时间，仅新增时由服务端生成
+      example: '2026-10-19 10:53:00'
+
+PagedCouponTasks:
+  type: object
+  description: 发券任务分页结果
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/CouponTask'
+
+CouponTaskInput:
+  type: object
+  description: 发券任务新增 / 编辑入参（POST 新增，PUT 编辑）
+  required: [name, couponId, audiences, planned, validFrom, validTo]
+  properties:
+    id:
+      type: string
+      description: 任务 ID；PUT 时以路径参数为准，Body 中可省略，POST 时忽略
+      example: CP021
+    name:
+      type: string
+      description: 任务名称
+      maxLength: 30
+      example: 双十二新客拉新
+    couponId:
+      type: string
+      description: 发放卡券 ID，须存在于资产卡券且可发放
+      example: CP001
+    audiences:
+      type: array
+      description: 发放人群标签，至少 1 个且去重，须为会员标签管理中启用的标签
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [新客, 学生客群]
+    planned:
+      type: number
+      description: 计划发放数量，整数，范围 1 ~ 100000
+      minimum: 1
+      maximum: 100000
+      example: 5000
+    validFrom:
+      type: string
+      description: 券有效期开始日，格式 YYYY-MM-DD
+      example: '2026-12-01'
+    validTo:
+      type: string
+      description: 券有效期结束日，格式 YYYY-MM-DD，不得早于 validFrom
+      example: '2026-12-12'
+
+AutomationPlan:
+  type: object
+  description: 自动化营销计划
+  required: [id, name, activityId, activityName, activityType, audiences, triggerType, triggerRule, channels, notifyMethod, status, createdAt]
+  properties:
+    id:
+      type: string
+      description: 自动化计划 ID，AT 前缀 + 3 位序号
+      example: AT001
+    name:
+      type: string
+      description: 计划名称
+      example: 新客 24 小时欢迎计划
+    activityId:
+      type: string
+      description: 关联活动 ID，可为 FR / FD / CP 前缀，来自 GET /api/v1/marketing/activities/options
+      example: FR019
+    activityName:
+      type: string
+      readOnly: true
+      description: 只读，由后端按 activityId 反查填充
+      example: 麻辣季满减
+    activityType:
+      type: string
+      readOnly: true
+      description: 只读，由后端按 activityId 反查填充；中文字符串枚举
+      enum: [满减活动, 满折活动, 发券活动]
+      example: 满减活动
+    audiences:
+      type: array
+      description: 人群标签名称列表，至少 1 个且去重，须为会员标签管理中启用的标签
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [价格敏感, 亲子客群]
+    triggerType:
+      type: string
+      description: 触发方式，scheduled 为定时、event 为事件
+      enum: [scheduled, event]
+      example: scheduled
+    triggerRule:
+      type: string
+      description: 触发时间 / 周期（scheduled）或事件描述（event）
+      maxLength: 40
+      example: 每周五 17:30
+    channels:
+      type: array
+      description: 触达渠道数组，至少 1 个且去重
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+        enum: [sms, wechat, inbox]
+      example: [sms]
+    notifyMethod:
+      type: string
+      description: 通知方式
+      enum: [template, text, rich]
+      example: template
+    status:
+      type: string
+      description: 计划状态，新建计划固定 enabled
+      enum: [enabled, paused]
+      example: enabled
+    createdAt:
+      type: string
+      description: 创建时间，仅新增时由服务端生成
+      example: '2026-09-23 16:01:00'
+
+PagedAutomationPlans:
+  type: object
+  description: 自动化计划分页结果
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/AutomationPlan'
+
+AutomationPlanInput:
+  type: object
+  description: 自动化计划新增 / 编辑入参（POST 新增，PUT 编辑）
+  required: [name, activityId, audiences, triggerType, triggerRule, channels, notifyMethod]
+  properties:
+    id:
+      type: string
+      description: 计划 ID；PUT 时以路径参数为准，Body 中可省略，POST 时忽略
+      example: AT021
+    name:
+      type: string
+      description: 计划名称
+      maxLength: 30
+      example: 新客 24 小时欢迎计划
+    activityId:
+      type: string
+      description: 关联活动 ID，必须存在于活动选项（满减 / 满折 / 发券）
+      example: FR019
+    audiences:
+      type: array
+      description: 人群标签，至少 1 个且去重，须为会员标签管理中启用的标签
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+      example: [新客, 价格敏感]
+    triggerType:
+      type: string
+      description: 触发方式
+      enum: [scheduled, event]
+      example: scheduled
+    triggerRule:
+      type: string
+      description: 触发时间 / 周期或事件描述
+      maxLength: 40
+      example: 每天 10:00
+    channels:
+      type: array
+      description: 触达渠道，至少 1 个且去重
+      minItems: 1
+      uniqueItems: true
+      items:
+        type: string
+        enum: [sms, wechat, inbox]
+      example: [sms, wechat]
+    notifyMethod:
+      type: string
+      description: 通知方式
+      enum: [template, text, rich]
+      example: template
+
+NotificationTemplate:
+  type: object
+  description: 消息通知模板
+  required: [id, name, scene, channel, notifyMethod, content, summary, sendCount, status, updatedAt]
+  properties:
+    id:
+      type: string
+      description: 通知模板 ID，NT 前缀 + 3 位序号
+      example: NT001
+    name:
+      type: string
+      description: 模板名称
+      example: 活动开始提醒
+    scene:
+      type: string
+      description: 通知场景
+      enum: [activityStart, couponArrived, orderStatus, memberUpgrade]
+      example: activityStart
+    channel:
+      type: string
+      description: 渠道（单值）
+      enum: [sms, wechat, inbox]
+      example: wechat
+    notifyMethod:
+      type: string
+      description: 通知方式
+      enum: [template, text, rich]
+      example: template
+    content:
+      type: string
+      description: 通知正文，支持 {变量} 占位符
+      maxLength: 200
+      example: '【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
+    summary:
+      type: string
+      readOnly: true
+      description: 内容摘要，由后端生成，content 超 34 字时截断并追加省略号
+      example: 亲爱的{会员昵称}，{券名称} 已放入您的卡券包，消费满 100 元…
+    sendCount:
+      type: number
+      readOnly: true
+      description: 累计发送量（条），仅由发送任务累加，保存接口不接受修改
+      minimum: 0
+      example: 62642
+    status:
+      type: string
+      description: 模板状态，新建模板固定 enabled
+      enum: [enabled, disabled]
+      example: enabled
+    updatedAt:
+      type: string
+      description: 最近更新时间，新增 / 编辑均由服务端刷新
+      example: '2026-10-17 13:49:00'
+
+PagedNotificationTemplates:
+  type: object
+  description: 通知模板分页结果
+  allOf:
+    - $ref: './common.yaml#/Pagination'
+    - type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/NotificationTemplate'
+
+NotificationTemplateInput:
+  type: object
+  description: 通知模板新增 / 编辑入参（POST 新增，PUT 编辑）
+  required: [name, scene, channel, notifyMethod, content]
+  properties:
+    id:
+      type: string
+      description: 模板 ID；PUT 时以路径参数为准，Body 中可省略，POST 时忽略
+      example: NT023
+    name:
+      type: string
+      description: 模板名称
+      maxLength: 30
+      example: 新券到账通知
+    scene:
+      type: string
+      description: 通知场景
+      enum: [activityStart, couponArrived, orderStatus, memberUpgrade]
+      example: couponArrived
+    channel:
+      type: string
+      description: 渠道（单值）
+      enum: [sms, wechat, inbox]
+      example: wechat
+    notifyMethod:
+      type: string
+      description: 通知方式
+      enum: [template, text, rich]
+      example: template
+    content:
+      type: string
+      description: 通知正文，支持 {变量} 占位符，占位符需与场景匹配
+      maxLength: 200
+      example: '【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
+
+MarketingActivityOption:
+  type: object
+  description: 营销活动下拉选项（满减 / 满折 / 发券）
+  required: [value, label, activityType]
+  properties:
+    value:
+      type: string
+      description: 活动 ID，作为自动化计划的 activityId 提交
+      example: FR001
+    label:
+      type: string
+      description: 活动名称，前端展示与搜索用
+      example: 国庆满减狂欢
+    activityType:
+      type: string
+      description: 活动类型，中文字符串枚举
+      enum: [满减活动, 满折活动, 发券活动]
+      example: 满减活动
+
+StatusInput:
+  type: object
+  description: 营销启停入参（满减 / 满折 / 自动化 / 通知状态接口复用）
+  required: [enabled]
+  properties:
+    enabled:
+      type: boolean
+      description: true 启用，false 停用或暂停
+      example: false
