@@ -273,7 +273,7 @@ export async function saveStaff(input: StaffInput): Promise<Staff> {
     storeName: input.storeName,
     status: input.status,
     joinedAt: input.joinedAt,
-    email: `staff${String(seq).padStart(3, '0')}@bisas.com`,
+    email: `staff${String(seq).padStart(3, '0')}@pisa.com`,
     role: '门店员工',
     lastLogin: '—',
     loginIp: '—',

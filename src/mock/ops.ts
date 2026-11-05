@@ -294,7 +294,7 @@ export const staff: Staff[] = Array.from({ length: 26 }, (_, i) => {
     storeName: pick(rng, stores).name,
     status,
     joinedAt: stamp(joined).slice(0, 10),
-    email: `staff${pad(i + 1, 3)}@bisas.com`,
+    email: `staff${pad(i + 1, 3)}@pisa.com`,
     role: pick(rng, staffRolePool),
     lastLogin: status === 'disabled' ? '账号已停用' : stamp(login),
     loginIp:

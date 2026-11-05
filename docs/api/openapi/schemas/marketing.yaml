@@ -523,7 +523,7 @@ NotificationTemplate:
       type: string
       description: 通知正文，支持 {变量} 占位符
       maxLength: 200
-      example: '【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
+      example: '【比萨】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
     summary:
       type: string
       readOnly: true
@@ -590,7 +590,7 @@ NotificationTemplateInput:
       type: string
       description: 通知正文，支持 {变量} 占位符，占位符需与场景匹配
       maxLength: 200
-      example: '【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
+      example: '【比萨】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。'
 
 MarketingActivityOption:
   type: object

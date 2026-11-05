@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: 比萨斯 · 连锁餐饮 SaaS 管理后台 API
+  title: 比萨 · 连锁餐饮 SaaS 管理后台 API
   version: 1.0.0
   description: |
     本规范由前端 Mock（`src/mock/*` + `src/services/*`）反推而来，与 `docs/api/*.md` 契约文档一一对应，供后端实现与联调使用。

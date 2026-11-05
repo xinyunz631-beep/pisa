@@ -13,7 +13,7 @@
 ## 日常使用
 
 ```bash
-cd 比萨斯
+cd 比萨
 git status            # 看改动
 git add -A
 git commit -m "feat: xxx"

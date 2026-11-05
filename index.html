@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>比萨斯 · 连锁餐饮 SaaS 管理后台</title>
+    <title>比萨（pisa）· 连锁餐饮 SaaS 管理后台</title>
     <script>
       // 在 React 挂载前应用主题，避免夜间模式刷新时闪白
       try {
-        var stored = localStorage.getItem('bisas-theme');
+        var stored = localStorage.getItem('pisa-theme');
         if (stored === 'light' || stored === 'dark') {
           document.documentElement.dataset.theme = stored;
         } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {

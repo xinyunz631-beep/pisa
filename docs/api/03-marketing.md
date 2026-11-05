@@ -900,7 +900,7 @@
   "scene": "couponArrived",
   "channel": "wechat",
   "notifyMethod": "template",
-  "content": "【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。"
+  "content": "【比萨】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。"
 }
 ```
 
@@ -913,8 +913,8 @@
   "scene": "couponArrived",
   "channel": "wechat",
   "notifyMethod": "template",
-  "content": "【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。",
-  "summary": "【比萨斯】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在…",
+  "content": "【比萨】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在门店消费时出示核销，逾期作废。",
+  "summary": "【比萨】您有一张「{券名称}」已到账，有效期至 {失效时间}，可在…",
   "sendCount": 0,
   "status": "enabled",
   "updatedAt": "2026-11-04 09:30:00"

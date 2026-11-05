@@ -230,7 +230,7 @@ Staff:
       type: string
       format: email
       description: 邮箱（新增时服务端生成，不可编辑）
-      example: staff001@bisas.com
+      example: staff001@pisa.com
     role:
       type: string
       description: 权限角色（新增时服务端默认「门店员工」，不可由表单指定）

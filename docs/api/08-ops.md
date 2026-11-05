@@ -212,7 +212,7 @@ processing（处理中）──┤
 | `storeName` | string | 所属门店名称，如 `武汉江汉路店` |
 | `status` | string | 人员状态，见 3.6 |
 | `joinedAt` | string | 入职日期 `YYYY-MM-DD`，不得晚于当天 |
-| `email` | string | 邮箱，Mock 规则 `staff{3 位序号}@bisas.com`，新增时服务端生成，不可编辑 |
+| `email` | string | 邮箱，Mock 规则 `staff{3 位序号}@pisa.com`，新增时服务端生成，不可编辑 |
 | `role` | string | 权限角色，如 `门店员工`；新增时服务端默认 `门店员工`，不可由表单指定 |
 | `lastLogin` | string | 最近登录时间；停用账号显示「账号已停用」 |
 | `loginIp` | string | 最近登录 IP；停用账号显示「—」 |
@@ -582,7 +582,7 @@ processing（处理中）──┤
       "storeName": "武汉江汉路店",
       "status": "active",
       "joinedAt": "2026-09-10",
-      "email": "staff001@bisas.com",
+      "email": "staff001@pisa.com",
       "role": "客服专员",
       "lastLogin": "2026-10-18 13:04",
       "loginIp": "192.168.3.86"
@@ -596,7 +596,7 @@ processing（处理中）──┤
       "storeName": "武汉江汉路店",
       "status": "disabled",
       "joinedAt": "2026-10-23",
-      "email": "staff005@bisas.com",
+      "email": "staff005@pisa.com",
       "role": "客服专员",
       "lastLogin": "账号已停用",
       "loginIp": "—"
@@ -675,7 +675,7 @@ processing（处理中）──┤
   "storeName": "上海静安店",
   "status": "active",
   "joinedAt": "2026-11-01",
-  "email": "staff027@bisas.com",
+  "email": "staff027@pisa.com",
   "role": "门店员工",
   "lastLogin": "—",
   "loginIp": "—"
@@ -685,7 +685,7 @@ processing（处理中）──┤
 - **业务规则**：
   - `id` 服务端生成：Mock 规则为 `S` + 内存自增序号补零 3 位（当前 26 条 → 新增为 `S027`）。**Mock 使用内存计数器，刷新后会按 `staff.length` 重置；生产必须使用独立发号器**；
   - **工号唯一**：去空格转大写后校验（排除自身）；重复返回 `40900`（`message: "工号已存在，请更换"`）；
-  - **服务端默认值**（忽略客户端传值）：`email = staff{3 位 id 序号}@bisas.com`、`role = 门店员工`、`lastLogin = "—"`、`loginIp = "—"`；
+  - **服务端默认值**（忽略客户端传值）：`email = staff{3 位 id 序号}@pisa.com`、`role = 门店员工`、`lastLogin = "—"`、`loginIp = "—"`；
   - 姓名/工号去空格；手机号、入职日期校验失败 → `40001`；岗位/门店不存在 → `40001`；
   - 新增人员默认不创建登录账号（Mock 无账号开通流程）；生产建议异步创建账号并返回初始密码/邀请状态，或在人员详情中单独「开通账号」；
   - 前端保存成功后重新拉取列表并关闭抽屉。
@@ -715,7 +715,7 @@ processing（处理中）──┤
   "storeName": "西安钟楼店",
   "status": "active",
   "joinedAt": "2026-09-06",
-  "email": "staff002@bisas.com",
+  "email": "staff002@pisa.com",
   "role": "总部管理员",
   "lastLogin": "2026-10-31 11:43",
   "loginIp": "192.168.3.22"

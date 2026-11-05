@@ -66,7 +66,7 @@ export default function AdminLayout() {
         >
           {/* Logo 占位：只保留矩形容器，等正式 Logo 图片替换 */}
           <div
-            aria-label="比萨斯 Logo"
+            aria-label="比萨 Logo"
             style={{
               width: 32,
               height: 32,
@@ -76,7 +76,7 @@ export default function AdminLayout() {
             }}
           />
           <div style={{ lineHeight: 1.2 }}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>比萨斯</div>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>比萨</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>连锁餐饮 SaaS</div>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function AdminLayout() {
         <Content style={{ padding: '16px', minWidth: 0 }}>
           <Breadcrumb
             items={[
-              { title: activeModule?.label ?? '比萨斯' },
+              { title: activeModule?.label ?? '比萨' },
               ...(activeChild ? [{ title: activeChild.label }] : []),
             ]}
             style={{ marginBottom: 12 }}

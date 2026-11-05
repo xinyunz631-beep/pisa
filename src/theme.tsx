@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 export type ThemeMode = 'light' | 'dark';
 
-const STORAGE_KEY = 'bisas-theme';
+const STORAGE_KEY = 'pisa-theme';
 
 interface ThemeContextValue {
   mode: ThemeMode;

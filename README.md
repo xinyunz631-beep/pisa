@@ -1,8 +1,8 @@
-# 比萨斯 · 连锁餐饮 SaaS 管理后台（前端原型）
+# 比萨（pisa）· 连锁餐饮 SaaS 管理后台（前端原型）
 
 ![CI](https://github.com/xinyunz631-beep/pisa/actions/workflows/ci.yml/badge.svg)
 
-纯前端页面原型：**不做后端**，所有数据来自内存 Mock 层，交互（筛选、分页、增删改、抽屉详情）都能真实点。
+本仓库是**前端部分**：页面 + 内存 Mock 数据，筛选、分页、增删改、抽屉详情等交互都能真实操作。后端服务由后端团队按 [`docs/api/`](./docs/api/README.md) 的接口契约实现，不在本仓库范围内；当前 Mock 层用于后端就绪前的页面联调与演示，接后端时只需替换 `src/services/*` 的实现。
 
 ## 技术栈
 
@@ -18,7 +18,7 @@
 ## 快速开始
 
 ```bash
-cd 比萨斯
+cd 比萨
 npm install
 npm run dev      # http://127.0.0.1:5173
 npm run build    # 类型检查 + 生产构建
@@ -28,7 +28,7 @@ npm run build    # 类型检查 + 生产构建
 
 ```
 src/
-├── config/nav.tsx        # 导航唯一配置：6 大模块 + 每个模块的二级菜单 + 路由
+├── config/nav.tsx        # 导航唯一配置：7 个模块 + 每个模块的二级菜单 + 路由
 ├── theme.tsx             # 浅色 / 夜间主题（localStorage 持久化 + 跟随系统）
 ├── layouts/AdminLayout.tsx  # 顶部横排模块菜单 / 左侧二级菜单 / 内容区
 ├── pages/
@@ -44,7 +44,7 @@ src/
 │   ├── AfterSale/        # 售后处理
 │   ├── System/           # 岗位 / 人员 / 系统日志
 │   └── Placeholder/      # 占位页
-├── components/           # KpiCard / TrendChart（经营概览使用）
+├── components/           # KpiCard / TrendChart（仪表盘使用）
 ├── services/             # Mock 接口层：member / marketing / assets / business / order / ops / dish / dashboard
 ├── mock/                 # 内存数据库：db / members / marketing / assets / business / ops
 ├── utils/format.ts       # 金额、状态文案与颜色
@@ -69,7 +69,7 @@ src/
 
 - 入口：右上角**头像下拉菜单 → 夜间模式**（带勾选状态）
 - 实现：AntD `darkAlgorithm` 全局切换 + CSS 变量（`--page-bg` / `--panel-bg` / `--border-color` / 文本色）同步变色
-- 持久化：选择写入 `localStorage`（key `bisas-theme`）；首次进入跟随系统 `prefers-color-scheme`
+- 持久化：选择写入 `localStorage`（key `pisa-theme`）；首次进入跟随系统 `prefers-color-scheme`
 - 首屏防闪烁：`index.html` 内联脚本在 React 挂载前先设置 `<html data-theme>`
 
 ## Mock 数据的边界
@@ -116,7 +116,7 @@ src/
 
 ## 团队协作
 
-20 个页面由 Lead + 4 个智能体队员并行完成：营销 5 页、资产 3 页、业务 3 页、售后+系统 4 页各自独立目录与 Mock/Service 层，Lead 负责导航、会员 3 页、公共约定、集成与验收（`tsc`、`vite build`、20 条路由无头渲染检查、截图）。
+21 个页面由 Lead + 4 个智能体队员并行完成：营销 5 页、资产 3 页、业务 3 页、售后+系统 4 页各自独立目录与 Mock/Service 层，Lead 负责数据/会员模块、导航与公共约定、集成与验收（`tsc`、`vite build`、21 条路由无头渲染检查、截图）。
 
 ## 接口契约文档（给后端）
 
