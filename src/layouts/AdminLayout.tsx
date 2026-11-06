@@ -84,6 +84,7 @@ export default function AdminLayout() {
         <Menu
           className="top-nav"
           mode="horizontal"
+          disabledOverflow
           theme={dark ? 'dark' : 'light'}
             selectedKeys={activeModule ? [activeModule.path] : []}
             items={modules.map((mod) => ({ key: mod.path, icon: mod.icon, label: mod.label }))}
@@ -96,6 +97,7 @@ export default function AdminLayout() {
 
         <Space size={16} style={{ marginLeft: 'auto', flexShrink: 0 }}>
           <Select
+            className="header-store"
             showSearch
             optionFilterProp="label"
             value={storeId}
@@ -126,7 +128,7 @@ export default function AdminLayout() {
               <Avatar style={{ background: '#d4380d' }} size={32}>
                 周
               </Avatar>
-              <span style={{ fontSize: 13 }}>周明 · 总部运营</span>
+              <span className="header-user-name" style={{ fontSize: 13 }}>周明 · 总部运营</span>
             </Space>
           </Dropdown>
         </Space>

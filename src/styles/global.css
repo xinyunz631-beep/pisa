@@ -71,7 +71,7 @@ body {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
 }
 
@@ -217,4 +217,23 @@ body {
 
 [data-theme='dark'] .amount-out {
   color: #ff7875;
+}
+
+/* 顶部一级菜单绝不被折叠成「...」：窄屏时优先压缩导航项间距、再依次隐藏门店选择器与用户名 */
+@media (max-width: 1399px) {
+  .top-nav.ant-menu-horizontal > .ant-menu-item {
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .header-user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 1099px) {
+  .header-store {
+    display: none;
+  }
 }
