@@ -6,3 +6,6 @@ dist-ssr
 .DS_Store
 .vite
 *.log
+
+# 本地会话聊天记录：仅保留在本机，不提交、不推送（含本地路径与内部讨论）
+docs/chat-log/
