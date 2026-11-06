@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import {
+  AccountBookOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   DashboardOutlined,
@@ -8,6 +9,7 @@ import {
   CoffeeOutlined,
   CreditCardOutlined,
   CustomerServiceOutlined,
+  FileDoneOutlined,
   FileSearchOutlined,
   FileTextOutlined,
   GiftOutlined,
@@ -23,6 +25,7 @@ import {
   ShopOutlined,
   SolutionOutlined,
   StarOutlined,
+  SwapOutlined,
   TagOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -32,8 +35,8 @@ import {
 } from '@ant-design/icons';
 
 /**
- * 导航配置 = 顶部 6 大模块 + 左侧二级菜单 + 路由的唯一来源。
- * 模块顺序：会员 / 营销 / 资产 / 业务 / 订单 / 系统。
+ * 导航配置 = 顶部模块 + 左侧二级菜单 + 路由的唯一来源。
+ * 模块顺序：数据 / 会员 / 营销 / 资产 / 业务 / 订单 / 财务 / 系统。
  */
 const DashboardPage = lazy(() => import('../pages/Dashboard'));
 const MembersPage = lazy(() => import('../pages/Members'));
@@ -50,6 +53,8 @@ const AfterSalePage = lazy(() => import('../pages/AfterSale'));
 const PositionsPage = lazy(() => import('../pages/System/Positions'));
 const StaffPage = lazy(() => import('../pages/System/Staff'));
 const LogsPage = lazy(() => import('../pages/System/Logs'));
+const TransactionsPage = lazy(() => import('../pages/Finance/Transactions'));
+const StatementsPage = lazy(() => import('../pages/Finance/Statements'));
 const CardsPage = lazy(() => import('../pages/Assets/Cards'));
 const PointsPage = lazy(() => import('../pages/Assets/Points'));
 const PackagesPage = lazy(() => import('../pages/Assets/Packages'));
@@ -166,6 +171,25 @@ export const modules: NavModule[] = [
         label: '售后处理',
         icon: <CustomerServiceOutlined />,
         component: AfterSalePage,
+      },
+    ],
+  },
+  {
+    path: '/finance',
+    label: '财务',
+    icon: <AccountBookOutlined />,
+    children: [
+      {
+        path: '/finance/transactions',
+        label: '交易流水',
+        icon: <SwapOutlined />,
+        component: TransactionsPage,
+      },
+      {
+        path: '/finance/statements',
+        label: '对账单',
+        icon: <FileDoneOutlined />,
+        component: StatementsPage,
       },
     ],
   },

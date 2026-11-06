@@ -199,3 +199,22 @@ body {
 .top-nav.ant-menu-horizontal > .ant-menu-item {
   padding-inline: 12px;
 }
+
+/* 财务流水金额方向：收入绿、支出红，夜间模式下提亮 */
+.amount-in {
+  color: #389e0d;
+  font-weight: 500;
+}
+
+.amount-out {
+  color: #cf1322;
+  font-weight: 500;
+}
+
+[data-theme='dark'] .amount-in {
+  color: #73d13d;
+}
+
+[data-theme='dark'] .amount-out {
+  color: #ff7875;
+}
