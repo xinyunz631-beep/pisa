@@ -1,3 +1,4 @@
+import { attributeGroups } from '../mock/attributes';
 import { categories, enabledCategoryNames } from '../mock/categories';
 import { dishes } from '../mock/db';
 import { paginate, sleep } from '../mock/util';
@@ -76,6 +77,8 @@ export interface DishInput {
   images?: string[];
   /** 规格列表，至少 1 条。 */
   skus: DishSkuInput[];
+  /** 引用的做法 / 口味属性组 ID（可选）。 */
+  attributeGroupIds?: string[];
 }
 
 export async function saveDish(input: DishInput): Promise<Dish> {
@@ -102,6 +105,9 @@ export async function saveDish(input: DishInput): Promise<Dish> {
   // SPU 的基础价 / 库存由 SKU 汇总推导，保证「列表展示」和「规格明细」永远一致
   const price = Math.min(...skus.map((sku) => sku.price));
   const stock = skus.reduce((sum, sku) => sum + sku.stock, 0);
+  const attributeGroupIds = (input.attributeGroupIds ?? []).filter((id) =>
+    attributeGroups.some((group) => group.id === id),
+  );
 
   if (input.id) {
     const target = dishes.find((dish) => dish.id === input.id);
@@ -115,6 +121,7 @@ export async function saveDish(input: DishInput): Promise<Dish> {
       stock,
       images: input.images ?? target.images,
       skus,
+      attributeGroupIds,
       status: input.status,
       description: input.description ?? target.description,
       updatedAt,
@@ -132,6 +139,7 @@ export async function saveDish(input: DishInput): Promise<Dish> {
     stock,
     images: input.images ?? [],
     skus,
+    attributeGroupIds,
     sales: 0,
     status: input.status,
     description: input.description ?? '',

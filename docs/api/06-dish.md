@@ -14,14 +14,14 @@
 
 - 列表：按关键词（菜品名称 / 编码）、分类、状态筛选并分页；
 - 分类选项：进入页面时加载，同时用于筛选下拉与新增/编辑表单；
-- 新增 / 编辑：右侧抽屉表单（商品编码、名称、分类、商品图、规格 SKU、成本、状态、描述）；
+- 新增 / 编辑：右侧抽屉表单（商品编码、名称、分类、商品图、规格 SKU、口味 / 做法属性引用、成本、状态、描述）；
 - 上下架：列表行内 `Switch` 切换 `on`（在售）/ `off`（已下架）；关闭时前端二次确认，提示「下架不影响已生成的订单，用户将无法购买此商品，确定要下架吗？」；
 - 列表展示：菜品名称 + 系统编号/商品编码、分类、售价区间（多规格）、库存合计、销量、状态、更新时间（成本与毛利率不在列表展示，成本仅用于对账单核算）；
 - 删除：二次确认后删除。
 
 **前端数据流**：`页面 → src/services/dish.ts → src/mock/db.ts` 的 `dishes` 内存数组。真实后端只需替换 service 层实现，页面无需改动。
 
-**本期未建模**（`Dish` 类型中不存在，不纳入本期契约）：口味加料 / 做法选项、门店级价格与上下架、销量写入（`sales` 只读）。分类字典 CRUD 见「业务 · 分类管理」页面（接口契约待补）。
+**本期未建模**（`Dish` 类型中不存在，不纳入本期契约）：门店级价格与上下架、点单时的属性选择快照、销量写入（`sales` 只读）。分类字典 CRUD 见「业务 · 分类管理」页面、做法属性组 CRUD 见「业务 · 做法属性」页面（两者接口契约待补）。
 
 > 数据模型为 **SPU + SKU**：`Dish` 是 SPU（菜品），`skus` 是规格（SKU）；SPU 的 `price`（最低 SKU 价）与 `stock`（SKU 库存合计）由 SKU 汇总推导。
 
@@ -77,6 +77,7 @@
 | `stock` | number | 当前库存（份）= 全部 SKU 库存合计，服务端按 SKU 汇总推导 |
 | `images` | string[] | 商品图，最多 6 张；元素为图片 URL（Mock 为内联 SVG dataURL），不在列表展示 |
 | `skus` | DishSku[] | 规格（SKU）列表，至少 1 条，字段见 3.4 |
+| `attributeGroupIds` | string[] | 引用的做法 / 口味属性组 ID（可空）；属性组由「业务 · 做法属性」维护，不参与售价与库存 |
 | `sales` | number | 累计销量，只读；新增时服务端置 `0`；真实接口建议由订单/结算聚合，不接受客户端写入 |
 | `status` | string | 菜品状态，见 3.1 |
 | `description` | string | 菜品描述，最长 120 字符，可为空串 |
@@ -132,6 +133,7 @@
         { "id": "D001-01", "code": "SPU001-01", "specName": "小份", "price": 68, "stock": 7 },
         { "id": "D001-02", "code": "SPU001-02", "specName": "大份", "price": 80, "stock": 5 }
       ],
+      "attributeGroupIds": ["A001", "A003", "A004"],
       "sales": 1749,
       "status": "on",
       "description": "招牌麻辣锅底，可选微辣/中辣/特辣",
@@ -150,6 +152,7 @@
         { "id": "D002-01", "code": "SPU002-01", "specName": "小份", "price": 78, "stock": 29 },
         { "id": "D002-02", "code": "SPU002-02", "specName": "大份", "price": 90, "stock": 20 }
       ],
+      "attributeGroupIds": ["A001", "A003", "A004"],
       "sales": 2156,
       "status": "on",
       "description": "老坛酸菜配黑鱼片，酸辣开胃",
@@ -201,6 +204,7 @@
 | cost | number | 是 | 成本（元），`≥ 0`，最多 2 位小数 |
 | images | string[] | 否 | 商品图，最多 6 张 |
 | skus | DishSkuInput[] | 是 | 规格列表，至少 1 条；每项：`code`（SKU 编码）、`specName`（规格名）、`price`（售价）、`stock`（库存） |
+| attributeGroupIds | string[] | 否 | 引用的做法属性组 ID 列表；不存在 / 已停用的 ID 不生效 |
 | status | string | 是 | `on` / `off`，页面新增时默认 `on` |
 | description | string | 否 | 菜品描述，≤ 120 字符；缺省保存为空串 |
 
@@ -219,6 +223,7 @@
   "skus": [
     { "id": "D029-01", "code": "SPU029-01", "specName": "标准份", "price": 28, "stock": 100 }
   ],
+  "attributeGroupIds": ["A003"],
   "sales": 0,
   "status": "on",
   "description": "现炒蒜香，清爽解腻",
@@ -231,6 +236,7 @@
   - **SPU / SKU**：`price` 取 `skus` 中最低售价、`stock` 取 `skus` 库存合计，均由服务端推导，忽略客户端传值；`skus` 至少 1 条，`specName`/`code` 非空；
   - `code`（商品编码）唯一性：Mock 校验重复并报错，生产冲突返回 `40900`；
   - `images` 最多 6 张，超出返回 `40001`；
+  - `attributeGroupIds` 可选，传入不存在的属性组 ID 时忽略（Mock）／生产建议返回 `40001`；属性不参与 `price` / `stock` 计算；
   - `sales` 恒由服务端置 `0`，忽略客户端传值；`updatedAt` 由服务端生成（Mock 只到分钟，契约按 README 统一到秒 `YYYY-MM-DD HH:mm:ss`）；
   - 唯一性：Mock 未校验菜品名称重复，生产建议「同分类下名称唯一」，冲突返回 `40900`；
   - 校验：`category` 不存在 → `40001`；`price`/`cost` 为负数或超 2 位小数 → `40001`；`name` 为空 → `40001`；
@@ -247,7 +253,7 @@
 | --- | --- | --- | --- |
 | id | string | 是 | 菜品编码，如 `D001` |
 
-- **入参（Body）**：同 `POST /api/v1/dishes` 的 `code`、`name`、`category`、`cost`、`images`、`skus`、`status`、`description`（不传 `id`，以 Path 为准）。
+- **入参（Body）**：同 `POST /api/v1/dishes` 的 `code`、`name`、`category`、`cost`、`images`、`skus`、`attributeGroupIds`、`status`、`description`（不传 `id`，以 Path 为准）。
 
 - **出参（data）**：更新后的完整菜品对象：
 
@@ -265,6 +271,7 @@
     { "id": "D001-01", "code": "SPU001-01", "specName": "小份", "price": 68, "stock": 10 },
     { "id": "D001-02", "code": "SPU001-02", "specName": "大份", "price": 88, "stock": 5 }
   ],
+  "attributeGroupIds": ["A001", "A003", "A004"],
   "sales": 1749,
   "status": "on",
   "description": "招牌麻辣锅底，可选微辣/中辣/特辣",
@@ -339,6 +346,7 @@
 | 库存 | 静态字段，下单不扣减；SPU 库存为 SKU 合计 | 需 SKU 级订单扣减 + 库存流水，缺货拦截下单 |
 | 规格（SKU） | Mock 内置 1~2 个 SKU（固定规则生成），无 SKU 级上下架 | 建议 SKU 级价格 / 库存 / 条码，可独立上下架 |
 | 商品图 | 内联 SVG 占位，dataURL 只存内存 | 对象存储 + CDN，接口返回 URL，限制 ≤ 6 张 |
+| 做法属性 | 属性组独立维护、菜品仅存 ID 引用；属性组未参与点单 | 点单时选择并快照到订单明细（groupName + labels），不生成 SKU、不扣库存 |
 | 商品编码 | 种子数据唯一，Mock 保存时校验重复 | 全局唯一索引，支持商家自定义编码 |
 | 分类 | 分类管理页面维护（Mock 内存） | 独立分类字典 + CRUD |
 | 门店维度 | 未隔离，共享字典 | 视业务扩展门店菜品关系 |

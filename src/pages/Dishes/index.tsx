@@ -3,6 +3,7 @@ import {
   App,
   Button,
   Card,
+  Checkbox,
   Drawer,
   Form,
   Input,
@@ -20,6 +21,10 @@ import type { ColumnsType } from 'antd/es/table';
 import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import {
+  attributeSelectionMeta,
+  fetchAttributeGroupOptions,
+} from '../../services/attribute';
+import {
   fetchCategories,
   fetchDishes,
   fetchNextDishCode,
@@ -28,7 +33,7 @@ import {
   updateDishStatus,
   type DishInput,
 } from '../../services/dish';
-import type { Dish, DishStatus, Paged } from '../../types';
+import type { Dish, DishAttributeGroup, DishStatus, Paged } from '../../types';
 import { dishStatusMeta, money } from '../../utils/format';
 
 const emptyPage: Paged<Dish> = { list: [], total: 0, page: 1, pageSize: 10 };
@@ -49,6 +54,7 @@ interface DishFormValues {
   status: DishStatus;
   description?: string;
   skus: DishSkuFormValues[];
+  attributeGroupIds?: string[];
 }
 
 /** 菜品管理：SPU（菜品）+ SKU（规格）模型，支持商品编码、商品图与多规格。 */
@@ -64,6 +70,7 @@ export default function DishesPage() {
   const [pageSize, setPageSize] = useState(10);
 
   const [categories, setCategories] = useState<string[]>([]);
+  const [attributeGroups, setAttributeGroups] = useState<DishAttributeGroup[]>([]);
   const [data, setData] = useState<Paged<Dish>>(emptyPage);
   const [loading, setLoading] = useState(true);
 
@@ -87,6 +94,7 @@ export default function DishesPage() {
 
   useEffect(() => {
     void fetchCategories().then(setCategories);
+    void fetchAttributeGroupOptions().then(setAttributeGroups);
   }, []);
 
   const resetFilters = () => {
@@ -105,6 +113,7 @@ export default function DishesPage() {
       code,
       status: 'on',
       skus: [{ specName: '标准份', code: `${code}-01`, stock: 100 }],
+      attributeGroupIds: [],
     });
     setDrawerOpen(true);
   };
@@ -119,6 +128,7 @@ export default function DishesPage() {
       cost: dish.cost,
       status: dish.status,
       description: dish.description,
+      attributeGroupIds: dish.attributeGroupIds,
       skus: dish.skus.map((sku) => ({
         code: sku.code,
         specName: sku.specName,
@@ -187,6 +197,7 @@ export default function DishesPage() {
           price: Number(sku.price),
           stock: Number(sku.stock),
         })),
+        attributeGroupIds: values.attributeGroupIds ?? [],
       };
       await saveDish(payload);
       message.success(editing ? '菜品已更新' : '菜品已新增');
@@ -565,6 +576,45 @@ export default function DishesPage() {
             </Form.List>
             {skuSummary && <div className="sku-summary">{skuSummary}</div>}
           </div>
+
+          <Form.Item
+            name="attributeGroupIds"
+            label="口味 / 做法"
+            extra="在「业务 · 做法属性」中统一维护；勾选后点单时可选择，属性不影响售价与库存"
+            style={{ marginTop: 16 }}
+          >
+            {attributeGroups.length === 0 ? (
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                还没有启用中的属性组，去「业务 · 做法属性」创建
+              </span>
+            ) : (
+              <Checkbox.Group style={{ width: '100%' }}>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  {attributeGroups.map((group) => (
+                    <Checkbox key={group.id} value={group.id}>
+                      <Space size={6} align="center" wrap>
+                        <span style={{ fontWeight: 500 }}>{group.name}</span>
+                        <Tag
+                          color={attributeSelectionMeta[group.selection].color}
+                          style={{ marginInlineEnd: 0 }}
+                        >
+                          {attributeSelectionMeta[group.selection].label}
+                        </Tag>
+                        {group.required && (
+                          <Tag color="gold" style={{ marginInlineEnd: 0 }}>
+                            必选
+                          </Tag>
+                        )}
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          {group.options.map((option) => option.label).join(' / ')}
+                        </span>
+                      </Space>
+                    </Checkbox>
+                  ))}
+                </Space>
+              </Checkbox.Group>
+            )}
+          </Form.Item>
 
           <Form.Item
             name="cost"

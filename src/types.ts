@@ -46,6 +46,8 @@ export interface Dish {
   images: string[];
   /** 规格（SKU）列表，至少 1 条。 */
   skus: DishSku[];
+  /** 引用的做法 / 口味属性组 ID（属性组本身在「业务 · 做法属性」维护）。 */
+  attributeGroupIds: string[];
   sales: number;
   status: DishStatus;
   description: string;
@@ -153,4 +155,34 @@ export interface MemberTagConfig {
   coverage: number;
   updatedAt: string;
   status: TagStatus;
+}
+
+/* ------------------------------------------------------------------ */
+/* 做法 / 口味属性组                                                   */
+/* ------------------------------------------------------------------ */
+
+/** 属性组选择方式：单选 / 多选。 */
+export type AttributeSelection = 'single' | 'multiple';
+export type AttributeStatus = 'enabled' | 'disabled';
+
+export interface DishAttributeOption {
+  id: string;
+  /** 选项名称，如「微辣」「免葱」。 */
+  label: string;
+  /** 选项加价（元）；口味 / 辣度类恒为 0，加料类才会 > 0。 */
+  extraPrice: number;
+  isDefault: boolean;
+}
+
+/** 做法 / 口味属性组：不参与售价与库存，下单时选择并按订单快照保存。 */
+export interface DishAttributeGroup {
+  id: string;
+  name: string;
+  selection: AttributeSelection;
+  /** 是否必选（点单时必须选择）。 */
+  required: boolean;
+  options: DishAttributeOption[];
+  status: AttributeStatus;
+  remark: string;
+  updatedAt: string;
 }

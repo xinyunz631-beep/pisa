@@ -7,6 +7,7 @@ import {
   DashboardOutlined,
   CarOutlined,
   CoffeeOutlined,
+  ControlOutlined,
   CreditCardOutlined,
   CustomerServiceOutlined,
   FileDoneOutlined,
@@ -62,6 +63,7 @@ const PackagesPage = lazy(() => import('../pages/Assets/Packages'));
 const MenusPage = lazy(() => import('../pages/Business/Menus'));
 const StoresPage = lazy(() => import('../pages/Business/Stores'));
 const CategoriesPage = lazy(() => import('../pages/Business/Categories'));
+const AttributesPage = lazy(() => import('../pages/Business/Attributes'));
 const DeliveryPage = lazy(() => import('../pages/Business/Delivery'));
 
 export interface NavChild {
@@ -162,6 +164,12 @@ export const modules: NavModule[] = [
         label: '分类管理',
         icon: <FolderOpenOutlined />,
         component: CategoriesPage,
+      },
+      {
+        path: '/business/attributes',
+        label: '做法属性',
+        icon: <ControlOutlined />,
+        component: AttributesPage,
       },
       { path: '/business/menus', label: '菜单管理', icon: <OrderedListOutlined />, component: MenusPage },
       { path: '/business/stores', label: '门店管理', icon: <ShopOutlined />, component: StoresPage },

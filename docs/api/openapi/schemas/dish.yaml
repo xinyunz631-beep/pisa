@@ -4,7 +4,7 @@
 Dish:
   type: object
   description: 菜品
-  required: [id, code, name, category, price, cost, stock, images, skus, sales, status, description, updatedAt]
+  required: [id, code, name, category, price, cost, stock, images, skus, attributeGroupIds, sales, status, description, updatedAt]
   properties:
     id:
       type: string
@@ -51,6 +51,12 @@ Dish:
       description: 规格（SKU）列表，至少 1 条；SPU 的 price/stock 由它汇总
       items:
         $ref: '#/DishSku'
+    attributeGroupIds:
+      type: array
+      description: 引用的做法 / 口味属性组 ID（可空）；属性组由「业务 · 做法属性」维护
+      items:
+        type: string
+      example: ['A001', 'A003']
     sales:
       type: integer
       minimum: 0
@@ -106,6 +112,12 @@ DishInput:
       description: 规格列表，至少 1 条
       items:
         $ref: '#/DishSkuInput'
+    attributeGroupIds:
+      type: array
+      description: 引用的做法属性组 ID 列表（可选）；不存在的 ID 不生效
+      items:
+        type: string
+      example: ['A001', 'A003']
     status:
       type: string
       enum: ['on', 'off']

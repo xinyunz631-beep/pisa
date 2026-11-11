@@ -285,3 +285,28 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+/* 做法属性：选项编辑器（选项名 / 加价 / 默认项 / 删除） */
+.attr-option-editor .attr-option-head,
+.attr-option-editor .attr-option-row {
+  display: grid;
+  grid-template-columns: 1fr 130px 90px 44px;
+  gap: 8px;
+  align-items: start;
+}
+
+.attr-option-editor .attr-option-head {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.attr-option-editor .attr-option-row .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.attr-option-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
