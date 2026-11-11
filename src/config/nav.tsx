@@ -12,6 +12,7 @@ import {
   FileDoneOutlined,
   FileSearchOutlined,
   FileTextOutlined,
+  FolderOpenOutlined,
   GiftOutlined,
   IdcardOutlined,
   InboxOutlined,
@@ -60,6 +61,7 @@ const PointsPage = lazy(() => import('../pages/Assets/Points'));
 const PackagesPage = lazy(() => import('../pages/Assets/Packages'));
 const MenusPage = lazy(() => import('../pages/Business/Menus'));
 const StoresPage = lazy(() => import('../pages/Business/Stores'));
+const CategoriesPage = lazy(() => import('../pages/Business/Categories'));
 const DeliveryPage = lazy(() => import('../pages/Business/Delivery'));
 
 export interface NavChild {
@@ -155,6 +157,12 @@ export const modules: NavModule[] = [
     icon: <AppstoreOutlined />,
     children: [
       { path: '/business/dishes', label: '菜品管理', icon: <CoffeeOutlined />, component: DishesPage },
+      {
+        path: '/business/categories',
+        label: '分类管理',
+        icon: <FolderOpenOutlined />,
+        component: CategoriesPage,
+      },
       { path: '/business/menus', label: '菜单管理', icon: <OrderedListOutlined />, component: MenusPage },
       { path: '/business/stores', label: '门店管理', icon: <ShopOutlined />, component: StoresPage },
       { path: '/business/delivery', label: '配送管理', icon: <CarOutlined />, component: DeliveryPage },
