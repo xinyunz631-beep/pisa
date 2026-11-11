@@ -12,6 +12,7 @@ import { paginate, sleep } from '../mock/util';
 import type {
   AttributeSelection,
   AttributeStatus,
+  DishAttributeBinding,
   DishAttributeGroup,
   Paged,
 } from '../types';
@@ -33,7 +34,9 @@ export const attributeStatusMeta: Record<AttributeStatus, { label: string; color
 };
 
 function dishCountOf(groupId: string): number {
-  return dishes.filter((dish) => dish.attributeGroupIds.includes(groupId)).length;
+  return dishes.filter((dish) =>
+    dish.attributeBindings.some((binding) => binding.groupId === groupId),
+  ).length;
 }
 
 function toRow(group: DishAttributeGroup): AttributeGroupRow {
@@ -83,7 +86,7 @@ export async function fetchAttributeSummary(): Promise<AttributeSummary> {
     enabled,
     optionTotal: attributeGroups.reduce((sum, group) => sum + group.options.length, 0),
     // 各菜品引用的属性组数量之和（同一菜品引用多个属性组各计一次）
-    dishRefTotal: dishes.reduce((sum, dish) => sum + dish.attributeGroupIds.length, 0),
+    dishRefTotal: dishes.reduce((sum, dish) => sum + dish.attributeBindings.length, 0),
   };
 }
 
@@ -165,6 +168,20 @@ export async function removeAttributeGroup(id: string): Promise<void> {
   const count = dishCountOf(id);
   if (count > 0) throw new Error(`该属性组已被 ${count} 道菜品引用，请先在菜品中取消引用`);
   removeAttributeGroupRecord(id);
+}
+
+/**
+ * 解析某个商品选项的实际加价（元）：商品级覆盖优先，否则继承属性组默认加价。
+ * 下单计价时用这个函数：最终单价 = SKU 售价 + Σ 选中选项的实际加价。
+ */
+export function resolveOptionExtraPrice(
+  group: DishAttributeGroup,
+  binding: DishAttributeBinding | undefined,
+  optionId: string,
+): number {
+  const override = binding?.optionPrices?.[optionId];
+  if (typeof override === 'number') return override;
+  return group.options.find((option) => option.id === optionId)?.extraPrice ?? 0;
 }
 
 /** 菜品编辑抽屉使用的属性组选项（仅启用中的）。 */

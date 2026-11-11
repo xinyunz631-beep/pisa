@@ -46,8 +46,8 @@ export interface Dish {
   images: string[];
   /** 规格（SKU）列表，至少 1 条。 */
   skus: DishSku[];
-  /** 引用的做法 / 口味属性组 ID（属性组本身在「业务 · 做法属性」维护）。 */
-  attributeGroupIds: string[];
+  /** 做法 / 口味属性绑定：引用属性组，并可按本商品覆盖选项加价 / 隐藏选项。 */
+  attributeBindings: DishAttributeBinding[];
   sales: number;
   status: DishStatus;
   description: string;
@@ -172,6 +172,17 @@ export interface DishAttributeOption {
   /** 选项加价（元）；口味 / 辣度类恒为 0，加料类才会 > 0。 */
   extraPrice: number;
   isDefault: boolean;
+}
+
+/** 商品对属性组的引用配置：加价可在商品级覆盖（A 商品 +3 元、B 商品 0 元）。 */
+export interface DishAttributeBinding {
+  groupId: string;
+  /** 覆盖属性组的「是否必选」；缺省继承属性组配置。 */
+  required?: boolean;
+  /** 本商品选项加价覆盖：optionId -> 加价（元）；缺省继承属性组的默认加价。 */
+  optionPrices?: Record<string, number>;
+  /** 本商品不提供的选项 ID。 */
+  disabledOptionIds?: string[];
 }
 
 /** 做法 / 口味属性组：不参与售价与库存，下单时选择并按订单快照保存。 */

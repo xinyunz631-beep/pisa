@@ -2,7 +2,7 @@ import { attributeGroups } from '../mock/attributes';
 import { categories, enabledCategoryNames } from '../mock/categories';
 import { dishes } from '../mock/db';
 import { paginate, sleep } from '../mock/util';
-import type { Dish, DishStatus, Paged } from '../types';
+import type { Dish, DishAttributeBinding, DishStatus, Paged } from '../types';
 
 export interface DishQuery {
   keyword?: string;
@@ -77,8 +77,8 @@ export interface DishInput {
   images?: string[];
   /** 规格列表，至少 1 条。 */
   skus: DishSkuInput[];
-  /** 引用的做法 / 口味属性组 ID（可选）。 */
-  attributeGroupIds?: string[];
+  /** 做法 / 口味属性绑定（可选）：引用属性组，并可覆盖选项加价 / 隐藏选项。 */
+  attributeBindings?: DishAttributeBinding[];
 }
 
 export async function saveDish(input: DishInput): Promise<Dish> {
@@ -105,9 +105,31 @@ export async function saveDish(input: DishInput): Promise<Dish> {
   // SPU 的基础价 / 库存由 SKU 汇总推导，保证「列表展示」和「规格明细」永远一致
   const price = Math.min(...skus.map((sku) => sku.price));
   const stock = skus.reduce((sum, sku) => sum + sku.stock, 0);
-  const attributeGroupIds = (input.attributeGroupIds ?? []).filter((id) =>
-    attributeGroups.some((group) => group.id === id),
-  );
+  // 属性绑定规范化：丢弃不存在的属性组 / 选项，加价只保留非负数值
+  const attributeBindings: DishAttributeBinding[] = [];
+  (input.attributeBindings ?? []).forEach((binding) => {
+    const group = attributeGroups.find((item) => item.id === binding.groupId);
+    if (!group) return;
+    const validOptionIds = new Set(group.options.map((option) => option.id));
+
+    const optionPrices: Record<string, number> = {};
+    Object.entries(binding.optionPrices ?? {}).forEach(([optionId, price]) => {
+      if (validOptionIds.has(optionId) && typeof price === 'number' && price >= 0) {
+        optionPrices[optionId] = price;
+      }
+    });
+
+    const disabledOptionIds = (binding.disabledOptionIds ?? []).filter((optionId) =>
+      validOptionIds.has(optionId),
+    );
+
+    attributeBindings.push({
+      groupId: group.id,
+      ...(binding.required === undefined ? {} : { required: binding.required }),
+      ...(Object.keys(optionPrices).length > 0 ? { optionPrices } : {}),
+      ...(disabledOptionIds.length > 0 ? { disabledOptionIds } : {}),
+    });
+  });
 
   if (input.id) {
     const target = dishes.find((dish) => dish.id === input.id);
@@ -121,7 +143,7 @@ export async function saveDish(input: DishInput): Promise<Dish> {
       stock,
       images: input.images ?? target.images,
       skus,
-      attributeGroupIds,
+      attributeBindings,
       status: input.status,
       description: input.description ?? target.description,
       updatedAt,
@@ -139,7 +161,7 @@ export async function saveDish(input: DishInput): Promise<Dish> {
     stock,
     images: input.images ?? [],
     skus,
-    attributeGroupIds,
+    attributeBindings,
     sales: 0,
     status: input.status,
     description: input.description ?? '',

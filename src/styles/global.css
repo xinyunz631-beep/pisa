@@ -310,3 +310,37 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+/* 菜品 → 属性组绑定：选项级加价覆盖 */
+.attr-binding {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.attr-binding-options {
+  margin: 10px 0 0 24px;
+}
+
+.attr-binding-head,
+.attr-binding-row {
+  display: grid;
+  grid-template-columns: 1fr 170px 90px;
+  gap: 8px;
+  align-items: center;
+}
+
+.attr-binding-head {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.attr-binding-row {
+  margin-bottom: 6px;
+}
+
+.attr-binding-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}

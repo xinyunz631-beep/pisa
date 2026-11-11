@@ -1,6 +1,7 @@
 import type {
   AttributeSelection,
   AttributeStatus,
+  DishAttributeBinding,
   DishAttributeGroup,
   DishAttributeOption,
 } from '../types';
@@ -103,18 +104,28 @@ function seedGroups(): DishAttributeGroup[] {
 
 export const attributeGroups: DishAttributeGroup[] = seedGroups();
 
-/** 按菜品分类给初始菜品分配属性组（与餐饮实际场景对齐）。 */
-const CATEGORY_GROUP_MAP: Record<string, string[]> = {
-  招牌主菜: ['A001', 'A003', 'A004'],
-  小炒: ['A001', 'A003'],
-  凉菜: ['A001', 'A003'],
-  饮品: ['A002'],
-  甜品: ['A002'],
-  主食: ['A003'],
+/** 按菜品分类给初始菜品分配属性组与加价配置（与餐饮实际场景对齐）。 */
+const CATEGORY_BINDING_MAP: Record<string, DishAttributeBinding[]> = {
+  // 招牌主菜：辣度 + 忌口 + 加料（加料按属性组默认加价）
+  招牌主菜: [{ groupId: 'A001' }, { groupId: 'A003' }, { groupId: 'A004' }],
+  // 小炒：同样引用加料，但「加宽粉」本店免费（A 商品 +3 元、B 商品 0 元的示例）
+  小炒: [
+    { groupId: 'A001' },
+    { groupId: 'A003' },
+    { groupId: 'A004', optionPrices: { 'A004-O1': 0 } },
+  ],
+  凉菜: [{ groupId: 'A001' }, { groupId: 'A003' }],
+  饮品: [{ groupId: 'A002' }],
+  甜品: [{ groupId: 'A002' }],
+  主食: [{ groupId: 'A003' }],
 };
 
-export function attributeGroupIdsForCategory(category: string): string[] {
-  return [...(CATEGORY_GROUP_MAP[category] ?? [])];
+export function attributeBindingsForCategory(category: string): DishAttributeBinding[] {
+  return (CATEGORY_BINDING_MAP[category] ?? []).map((binding) => ({
+    ...binding,
+    ...(binding.optionPrices ? { optionPrices: { ...binding.optionPrices } } : {}),
+    ...(binding.disabledOptionIds ? { disabledOptionIds: [...binding.disabledOptionIds] } : {}),
+  }));
 }
 
 export function findAttributeGroup(id: string): DishAttributeGroup | undefined {

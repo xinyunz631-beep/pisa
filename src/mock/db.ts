@@ -1,5 +1,5 @@
 import type { Dish, DishSku, Order, OrderItem, OrderStatus, Store } from '../types';
-import { attributeGroupIdsForCategory } from './attributes';
+import { attributeBindingsForCategory } from './attributes';
 import { mulberry32, pad, pick } from './util';
 
 /**
@@ -141,7 +141,7 @@ export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, descri
     stock: skus.reduce((sum, sku) => sum + sku.stock, 0),
     images: [dishImage(name, IMAGE_PALETTE[i % IMAGE_PALETTE.length])],
     skus,
-    attributeGroupIds: attributeGroupIdsForCategory(category),
+    attributeBindings: attributeBindingsForCategory(category),
     sales: Math.round(80 + rng() * 2400),
     status: i === 6 || i === 21 ? 'off' : 'on',
     description,

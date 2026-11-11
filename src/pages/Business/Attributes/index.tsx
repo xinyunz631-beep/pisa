@@ -297,7 +297,7 @@ export default function AttributesPage() {
         <div>
           <h2>做法属性</h2>
           <p>
-            属性组（辣度 / 温度 / 忌口 / 加料…）集中维护，菜品只做引用；属性不参与售价与库存，点单时按快照记录（Mock 数据）
+            属性组（辣度 / 温度 / 忌口 / 加料…）集中维护，选项加价为「默认加价」；菜品引用后可按本商品覆盖加价，属性不参与售价与库存，点单时按快照记录（Mock 数据）
           </p>
         </div>
         <Space>
@@ -462,7 +462,7 @@ export default function AttributesPage() {
           <div className="attr-option-editor">
             <div className="attr-option-head">
               <span>选项名称</span>
-              <span>加价（元）</span>
+              <span>默认加价（元）</span>
               <span>默认项</span>
               <span />
             </div>
@@ -521,8 +521,8 @@ export default function AttributesPage() {
             </Form.List>
             <div className="attr-option-hint">
               {selection === 'single' && required
-                ? '单选 + 必选：需要且只能设置一个默认项'
-                : '口味 / 辣度类加价填 0；加料类才需要填加价金额'}
+                ? '单选 + 必选：需要且只能设置一个默认项；这里的加价是默认值，菜品可单独覆盖'
+                : '口味 / 辣度类默认加价填 0；加料类填默认加价，菜品引用时可覆盖为 0 或其他金额'}
             </div>
           </div>
 

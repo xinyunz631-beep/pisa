@@ -33,7 +33,7 @@ import {
   updateDishStatus,
   type DishInput,
 } from '../../services/dish';
-import type { Dish, DishAttributeGroup, DishStatus, Paged } from '../../types';
+import type { Dish, DishAttributeBinding, DishAttributeGroup, DishStatus, Paged } from '../../types';
 import { dishStatusMeta, money } from '../../utils/format';
 
 const emptyPage: Paged<Dish> = { list: [], total: 0, page: 1, pageSize: 10 };
@@ -54,7 +54,6 @@ interface DishFormValues {
   status: DishStatus;
   description?: string;
   skus: DishSkuFormValues[];
-  attributeGroupIds?: string[];
 }
 
 /** 菜品管理：SPU（菜品）+ SKU（规格）模型，支持商品编码、商品图与多规格。 */
@@ -78,6 +77,7 @@ export default function DishesPage() {
   const [editing, setEditing] = useState<Dish | null>(null);
   const [saving, setSaving] = useState(false);
   const [imageList, setImageList] = useState<UploadFile[]>([]);
+  const [bindings, setBindings] = useState<DishAttributeBinding[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,8 +113,8 @@ export default function DishesPage() {
       code,
       status: 'on',
       skus: [{ specName: '标准份', code: `${code}-01`, stock: 100 }],
-      attributeGroupIds: [],
     });
+    setBindings([]);
     setDrawerOpen(true);
   };
 
@@ -128,7 +128,6 @@ export default function DishesPage() {
       cost: dish.cost,
       status: dish.status,
       description: dish.description,
-      attributeGroupIds: dish.attributeGroupIds,
       skus: dish.skus.map((sku) => ({
         code: sku.code,
         specName: sku.specName,
@@ -144,6 +143,7 @@ export default function DishesPage() {
         url,
       })),
     );
+    setBindings(dish.attributeBindings.map((binding) => ({ ...binding })));
     setDrawerOpen(true);
   };
 
@@ -197,7 +197,7 @@ export default function DishesPage() {
           price: Number(sku.price),
           stock: Number(sku.stock),
         })),
-        attributeGroupIds: values.attributeGroupIds ?? [],
+        attributeBindings: bindings,
       };
       await saveDish(payload);
       message.success(editing ? '菜品已更新' : '菜品已新增');
@@ -236,6 +236,49 @@ export default function DishesPage() {
     await removeDish(dish.id);
     message.success(`${dish.name} 已删除`);
     await load();
+  };
+
+  const bindingOf = (groupId: string) => bindings.find((binding) => binding.groupId === groupId);
+
+  const toggleBinding = (group: DishAttributeGroup, checked: boolean) => {
+    setBindings((prev) =>
+      checked
+        ? prev.some((binding) => binding.groupId === group.id)
+          ? prev
+          : [...prev, { groupId: group.id }]
+        : prev.filter((binding) => binding.groupId !== group.id),
+    );
+  };
+
+  const updateBinding = (
+    groupId: string,
+    updater: (binding: DishAttributeBinding) => DishAttributeBinding,
+  ) => {
+    setBindings((prev) =>
+      prev.map((binding) => (binding.groupId === groupId ? updater(binding) : binding)),
+    );
+  };
+
+  const setOptionPrice = (groupId: string, optionId: string, value: number | null) => {
+    updateBinding(groupId, (binding) => {
+      const nextPrices = { ...(binding.optionPrices ?? {}) };
+      if (value === null) delete nextPrices[optionId];
+      else nextPrices[optionId] = value;
+      return {
+        ...binding,
+        optionPrices: Object.keys(nextPrices).length > 0 ? nextPrices : undefined,
+      };
+    });
+  };
+
+  const setOptionProvided = (groupId: string, optionId: string, provided: boolean) => {
+    updateBinding(groupId, (binding) => {
+      const disabled = new Set(binding.disabledOptionIds ?? []);
+      if (provided) disabled.delete(optionId);
+      else disabled.add(optionId);
+      const list = [...disabled];
+      return { ...binding, disabledOptionIds: list.length > 0 ? list : undefined };
+    });
   };
 
   const columns: ColumnsType<Dish> = [
@@ -578,9 +621,8 @@ export default function DishesPage() {
           </div>
 
           <Form.Item
-            name="attributeGroupIds"
             label="口味 / 做法"
-            extra="在「业务 · 做法属性」中统一维护；勾选后点单时可选择，属性不影响售价与库存"
+            extra="在「业务 · 做法属性」统一维护；勾选后可按本商品覆盖选项加价（留空继承属性组默认价），点单时按订单快照记录，不参与售价与库存"
             style={{ marginTop: 16 }}
           >
             {attributeGroups.length === 0 ? (
@@ -588,31 +630,84 @@ export default function DishesPage() {
                 还没有启用中的属性组，去「业务 · 做法属性」创建
               </span>
             ) : (
-              <Checkbox.Group style={{ width: '100%' }}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {attributeGroups.map((group) => (
-                    <Checkbox key={group.id} value={group.id}>
-                      <Space size={6} align="center" wrap>
-                        <span style={{ fontWeight: 500 }}>{group.name}</span>
-                        <Tag
-                          color={attributeSelectionMeta[group.selection].color}
-                          style={{ marginInlineEnd: 0 }}
-                        >
-                          {attributeSelectionMeta[group.selection].label}
-                        </Tag>
-                        {group.required && (
-                          <Tag color="gold" style={{ marginInlineEnd: 0 }}>
-                            必选
+              <Space direction="vertical" size={10} style={{ width: '100%' }}>
+                {attributeGroups.map((group) => {
+                  const binding = bindingOf(group.id);
+                  return (
+                    <div className="attr-binding" key={group.id}>
+                      <Checkbox
+                        checked={Boolean(binding)}
+                        onChange={(event) => toggleBinding(group, event.target.checked)}
+                      >
+                        <Space size={6} align="center" wrap>
+                          <span style={{ fontWeight: 500 }}>{group.name}</span>
+                          <Tag
+                            color={attributeSelectionMeta[group.selection].color}
+                            style={{ marginInlineEnd: 0 }}
+                          >
+                            {attributeSelectionMeta[group.selection].label}
                           </Tag>
-                        )}
-                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          {group.options.map((option) => option.label).join(' / ')}
-                        </span>
-                      </Space>
-                    </Checkbox>
-                  ))}
-                </Space>
-              </Checkbox.Group>
+                          {group.required && (
+                            <Tag color="gold" style={{ marginInlineEnd: 0 }}>
+                              必选
+                            </Tag>
+                          )}
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            {group.options.map((option) => option.label).join(' / ')}
+                          </span>
+                        </Space>
+                      </Checkbox>
+
+                      {binding && (
+                        <div className="attr-binding-options">
+                          <div className="attr-binding-head">
+                            <span>选项</span>
+                            <span>本商品加价（元）</span>
+                            <span>是否提供</span>
+                          </div>
+                          {group.options.map((option) => {
+                            const disabled = binding.disabledOptionIds?.includes(option.id) ?? false;
+                            const override = binding.optionPrices?.[option.id];
+                            return (
+                              <div className="attr-binding-row" key={option.id}>
+                                <span>
+                                  {option.label}
+                                  {option.extraPrice > 0 && (
+                                    <Tag
+                                      color="orange"
+                                      style={{ marginInlineStart: 8, marginInlineEnd: 0 }}
+                                    >
+                                      默认 +{option.extraPrice}
+                                    </Tag>
+                                  )}
+                                </span>
+                                <InputNumber
+                                  min={0}
+                                  precision={2}
+                                  style={{ width: '100%' }}
+                                  disabled={disabled}
+                                  value={typeof override === 'number' ? override : undefined}
+                                  placeholder={`继承默认 ${option.extraPrice}`}
+                                  onChange={(value) =>
+                                    setOptionPrice(group.id, option.id, value === null ? null : Number(value))
+                                  }
+                                />
+                                <Switch
+                                  checked={!disabled}
+                                  onChange={(checked) => setOptionProvided(group.id, option.id, checked)}
+                                />
+                              </div>
+                            );
+                          })}
+                          <div className="attr-binding-hint">
+                            留空 = 继承属性组默认加价；关闭「是否提供」后该选项在本商品不可选
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </Space>
             )}
           </Form.Item>
 

@@ -77,7 +77,7 @@
 | `stock` | number | 当前库存（份）= 全部 SKU 库存合计，服务端按 SKU 汇总推导 |
 | `images` | string[] | 商品图，最多 6 张；元素为图片 URL（Mock 为内联 SVG dataURL），不在列表展示 |
 | `skus` | DishSku[] | 规格（SKU）列表，至少 1 条，字段见 3.4 |
-| `attributeGroupIds` | string[] | 引用的做法 / 口味属性组 ID（可空）；属性组由「业务 · 做法属性」维护，不参与售价与库存 |
+| `attributeBindings` | DishAttributeBinding[] | 做法 / 口味属性绑定（可空）：引用属性组并可按本商品覆盖选项加价 / 隐藏选项，结构见 3.6；不参与售价与库存 |
 | `sales` | number | 累计销量，只读；新增时服务端置 `0`；真实接口建议由订单/结算聚合，不接受客户端写入 |
 | `status` | string | 菜品状态，见 3.1 |
 | `description` | string | 菜品描述，最长 120 字符，可为空串 |
@@ -98,6 +98,23 @@
 - 列表不再展示成本与毛利率；成本只在前端对账单（`docs/api/09` 待补）做商品成本核算，`cost` 不参与菜品列表的计算列；
 - 售价展示：单规格显示 `¥68`，多规格显示 `¥68 ~ ¥80`（取 SKU 最低价 ~ 最高价），并标注「N 个规格」；
 - 库存展示：`stock = 0` 显示「缺货」（红色）、`0 < stock < 20` 显示预警色（橙色），其余正常显示 `N 份`。预警阈值属于前端展示规则，不落库。
+
+### 3.6 做法属性绑定与加价规则
+
+属性组由「业务 · 做法属性」统一维护，属性选项的 `extraPrice` 是**默认加价**；同一个属性组在不同商品上可以有不同的加价，由菜品上的绑定覆盖：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `groupId` | string | 引用的属性组 ID，如 `A004`（加料） |
+| `required` | boolean? | 覆盖属性组的「是否必选」，缺省继承属性组配置 |
+| `optionPrices` | Record<string, number>? | 本商品选项加价覆盖，key 为选项 ID；未覆盖的选项继承属性组默认加价 |
+| `disabledOptionIds` | string[]? | 本商品不提供的选项 |
+
+- **加价解析**：选中选项的实际加价 = `optionPrices[optionId] ?? 属性组选项.extraPrice`
+- **计价**：最终单价 = 选中 SKU 售价 + Σ（选中属性选项的实际加价）
+- 示例：加料组「加宽粉」默认 +3 元 → 招牌主菜未覆盖（+3 元），小炒覆盖为 0 元（免费）
+- 下单时必须把选中选项、实际加价、合计金额**快照**到订单明细，历史订单不随后续调价变化
+- 属性不生成 SKU、不扣库存；`disabledOptionIds` 中的选项在点单时不可选
 
 ## 四、接口明细
 
@@ -133,7 +150,11 @@
         { "id": "D001-01", "code": "SPU001-01", "specName": "小份", "price": 68, "stock": 7 },
         { "id": "D001-02", "code": "SPU001-02", "specName": "大份", "price": 80, "stock": 5 }
       ],
-      "attributeGroupIds": ["A001", "A003", "A004"],
+      "attributeBindings": [
+        { "groupId": "A001" },
+        { "groupId": "A003" },
+        { "groupId": "A004" }
+      ],
       "sales": 1749,
       "status": "on",
       "description": "招牌麻辣锅底，可选微辣/中辣/特辣",
@@ -152,7 +173,11 @@
         { "id": "D002-01", "code": "SPU002-01", "specName": "小份", "price": 78, "stock": 29 },
         { "id": "D002-02", "code": "SPU002-02", "specName": "大份", "price": 90, "stock": 20 }
       ],
-      "attributeGroupIds": ["A001", "A003", "A004"],
+      "attributeBindings": [
+        { "groupId": "A001" },
+        { "groupId": "A003" },
+        { "groupId": "A004" }
+      ],
       "sales": 2156,
       "status": "on",
       "description": "老坛酸菜配黑鱼片，酸辣开胃",
@@ -204,7 +229,7 @@
 | cost | number | 是 | 成本（元），`≥ 0`，最多 2 位小数 |
 | images | string[] | 否 | 商品图，最多 6 张 |
 | skus | DishSkuInput[] | 是 | 规格列表，至少 1 条；每项：`code`（SKU 编码）、`specName`（规格名）、`price`（售价）、`stock`（库存） |
-| attributeGroupIds | string[] | 否 | 引用的做法属性组 ID 列表；不存在 / 已停用的 ID 不生效 |
+| attributeBindings | DishAttributeBinding[] | 否 | 做法属性绑定：`groupId` 必填，可选 `required` / `optionPrices` / `disabledOptionIds` |
 | status | string | 是 | `on` / `off`，页面新增时默认 `on` |
 | description | string | 否 | 菜品描述，≤ 120 字符；缺省保存为空串 |
 
@@ -223,7 +248,9 @@
   "skus": [
     { "id": "D029-01", "code": "SPU029-01", "specName": "标准份", "price": 28, "stock": 100 }
   ],
-  "attributeGroupIds": ["A003"],
+  "attributeBindings": [
+    { "groupId": "A003", "disabledOptionIds": ["A003-O3"] }
+  ],
   "sales": 0,
   "status": "on",
   "description": "现炒蒜香，清爽解腻",
@@ -236,7 +263,7 @@
   - **SPU / SKU**：`price` 取 `skus` 中最低售价、`stock` 取 `skus` 库存合计，均由服务端推导，忽略客户端传值；`skus` 至少 1 条，`specName`/`code` 非空；
   - `code`（商品编码）唯一性：Mock 校验重复并报错，生产冲突返回 `40900`；
   - `images` 最多 6 张，超出返回 `40001`；
-  - `attributeGroupIds` 可选，传入不存在的属性组 ID 时忽略（Mock）／生产建议返回 `40001`；属性不参与 `price` / `stock` 计算；
+  - `attributeBindings` 可选；不存在的属性组 / 选项 ID 会被忽略（Mock）／生产建议返回 `40001`；`optionPrices` 只保留非负数值；属性不参与 `price` / `stock` 计算；
   - `sales` 恒由服务端置 `0`，忽略客户端传值；`updatedAt` 由服务端生成（Mock 只到分钟，契约按 README 统一到秒 `YYYY-MM-DD HH:mm:ss`）；
   - 唯一性：Mock 未校验菜品名称重复，生产建议「同分类下名称唯一」，冲突返回 `40900`；
   - 校验：`category` 不存在 → `40001`；`price`/`cost` 为负数或超 2 位小数 → `40001`；`name` 为空 → `40001`；
@@ -253,7 +280,7 @@
 | --- | --- | --- | --- |
 | id | string | 是 | 菜品编码，如 `D001` |
 
-- **入参（Body）**：同 `POST /api/v1/dishes` 的 `code`、`name`、`category`、`cost`、`images`、`skus`、`attributeGroupIds`、`status`、`description`（不传 `id`，以 Path 为准）。
+- **入参（Body）**：同 `POST /api/v1/dishes` 的 `code`、`name`、`category`、`cost`、`images`、`skus`、`attributeBindings`、`status`、`description`（不传 `id`，以 Path 为准）。
 
 - **出参（data）**：更新后的完整菜品对象：
 
@@ -271,7 +298,11 @@
     { "id": "D001-01", "code": "SPU001-01", "specName": "小份", "price": 68, "stock": 10 },
     { "id": "D001-02", "code": "SPU001-02", "specName": "大份", "price": 88, "stock": 5 }
   ],
-  "attributeGroupIds": ["A001", "A003", "A004"],
+  "attributeBindings": [
+    { "groupId": "A001" },
+    { "groupId": "A003" },
+    { "groupId": "A004", "optionPrices": { "A004-O1": 1 } }
+  ],
   "sales": 1749,
   "status": "on",
   "description": "招牌麻辣锅底，可选微辣/中辣/特辣",
@@ -346,7 +377,7 @@
 | 库存 | 静态字段，下单不扣减；SPU 库存为 SKU 合计 | 需 SKU 级订单扣减 + 库存流水，缺货拦截下单 |
 | 规格（SKU） | Mock 内置 1~2 个 SKU（固定规则生成），无 SKU 级上下架 | 建议 SKU 级价格 / 库存 / 条码，可独立上下架 |
 | 商品图 | 内联 SVG 占位，dataURL 只存内存 | 对象存储 + CDN，接口返回 URL，限制 ≤ 6 张 |
-| 做法属性 | 属性组独立维护、菜品仅存 ID 引用；属性组未参与点单 | 点单时选择并快照到订单明细（groupName + labels），不生成 SKU、不扣库存 |
+| 做法属性 | 属性组独立维护，菜品存绑定（可覆盖选项加价 / 隐藏选项）；未实现点单 | 点单时选择并按订单快照（groupName + labels + 实际加价），不生成 SKU、不扣库存 |
 | 商品编码 | 种子数据唯一，Mock 保存时校验重复 | 全局唯一索引，支持商家自定义编码 |
 | 分类 | 分类管理页面维护（Mock 内存） | 独立分类字典 + CRUD |
 | 门店维度 | 未隔离，共享字典 | 视业务扩展门店菜品关系 |
