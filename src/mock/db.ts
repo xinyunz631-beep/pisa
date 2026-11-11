@@ -123,11 +123,18 @@ function buildSkus(dishId: string, index: number, category: string, price: numbe
   }));
 }
 
+/** 无限库存示例：这些菜品不参与库存计数（stock = -1，不限量购买）。 */
+const UNLIMITED_STOCK_INDEXES = new Set([8, 13, 17]);
+
 export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, description], i) => {
   const id = `D${String(i + 1).padStart(3, '0')}`;
   // 库存不消耗随机种子，保证其它模块的 Mock 数据不因新增字段而漂移
   const baseStock = i === 22 ? 0 : 12 + ((i * 37) % 160);
-  const skus = buildSkus(id, i, category, price, baseStock);
+  const unlimited = UNLIMITED_STOCK_INDEXES.has(i);
+  const skus = buildSkus(id, i, category, price, baseStock).map((sku) => ({
+    ...sku,
+    stock: unlimited ? -1 : sku.stock,
+  }));
 
   return {
     id,
@@ -137,8 +144,10 @@ export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, descri
     // SPU 基础价 = 最低 SKU 价（本 Mock 里首个规格沿用原价，所以与历史数据一致）
     price: Math.min(...skus.map((sku) => sku.price)),
     cost,
-    // SPU 库存 = 各 SKU 库存合计
-    stock: skus.reduce((sum, sku) => sum + sku.stock, 0),
+    // SPU 库存：任一 SKU 为 -1（无限库存）则为 -1，否则为各 SKU 库存合计
+    stock: skus.some((sku) => sku.stock === -1)
+      ? -1
+      : skus.reduce((sum, sku) => sum + sku.stock, 0),
     images: [dishImage(name, IMAGE_PALETTE[i % IMAGE_PALETTE.length])],
     skus,
     attributeBindings: attributeBindingsForCategory(category),

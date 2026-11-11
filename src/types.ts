@@ -28,6 +28,7 @@ export interface DishSku {
   /** 规格名称，如「小份」「大杯」。 */
   specName: string;
   price: number;
+  /** 该规格库存（份）；`-1` 表示无限库存（不限量）。 */
   stock: number;
 }
 
@@ -40,7 +41,10 @@ export interface Dish {
   /** 基础售价 = 全部 SKU 中的最低价（订单快照、对账单按它计算）。 */
   price: number;
   cost: number;
-  /** 当前库存 = 全部 SKU 库存合计。 */
+  /**
+   * 当前库存（份）：`-1` 表示无限库存（不限量），否则为全部 SKU 库存合计。
+   * 只要有任一 SKU 为 `-1`，SPU 库存即为 `-1`。
+   */
   stock: number;
   /** 商品图，最多 6 张；Mock 用内联 SVG 占位。 */
   images: string[];

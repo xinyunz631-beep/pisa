@@ -60,6 +60,7 @@ export interface DishSkuInput {
   code: string;
   specName: string;
   price: number;
+  /** 库存；`-1` 表示无限库存（不限量）。 */
   stock: number;
 }
 
@@ -89,6 +90,11 @@ export async function saveDish(input: DishInput): Promise<Dish> {
   if (!input.skus || input.skus.length === 0) throw new Error('至少需要保留一个规格');
   if (input.images && input.images.length > 6) throw new Error('商品图最多 6 张');
 
+  const invalidSku = input.skus.find(
+    (sku) => !Number.isInteger(sku.stock) || (sku.stock < 0 && sku.stock !== -1),
+  );
+  if (invalidSku) throw new Error(`规格「${invalidSku.specName || invalidSku.code}」库存需为 ≥ 0 的整数，或 -1 表示无限库存`);
+
   const code = input.code.trim().toUpperCase();
   const duplicated = dishes.find((dish) => dish.id !== input.id && dish.code === code);
   if (duplicated) throw new Error(`商品编码「${code}」已存在`);
@@ -104,7 +110,10 @@ export async function saveDish(input: DishInput): Promise<Dish> {
 
   // SPU 的基础价 / 库存由 SKU 汇总推导，保证「列表展示」和「规格明细」永远一致
   const price = Math.min(...skus.map((sku) => sku.price));
-  const stock = skus.reduce((sum, sku) => sum + sku.stock, 0);
+  // 任一规格无限库存（-1）时，SPU 库存也是 -1；否则为各 SKU 合计
+  const stock = skus.some((sku) => sku.stock === -1)
+    ? -1
+    : skus.reduce((sum, sku) => sum + sku.stock, 0);
   // 属性绑定规范化：丢弃不存在的属性组 / 选项，加价只保留非负数值
   const attributeBindings: DishAttributeBinding[] = [];
   (input.attributeBindings ?? []).forEach((binding) => {

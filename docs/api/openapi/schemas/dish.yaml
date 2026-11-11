@@ -35,8 +35,8 @@ Dish:
       example: 26
     stock:
       type: integer
-      minimum: 0
-      description: 当前库存（份）= 全部 SKU 库存合计，0 表示缺货
+      minimum: -1
+      description: 当前库存（份）= 全部 SKU 库存合计；0 表示缺货；-1 表示无限库存（不限量），任一 SKU 为 -1 时 SPU 即为 -1
       example: 12
     images:
       type: array
@@ -150,8 +150,8 @@ DishSku:
       example: 68
     stock:
       type: integer
-      minimum: 0
-      description: 该规格库存（份）
+      minimum: -1
+      description: 该规格库存（份）；0 表示缺货；-1 表示无限库存（不限量，随便买）
       example: 7
 
 DishSkuInput:
@@ -175,9 +175,9 @@ DishSkuInput:
       example: 28
     stock:
       type: integer
-      minimum: 0
+      minimum: -1
       maximum: 9999
-      description: 库存（份）
+      description: 库存（份）；-1 表示无限库存（不限量）
       example: 100
 
 DishAttributeBinding:

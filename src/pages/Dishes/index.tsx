@@ -322,8 +322,18 @@ export default function DishesPage() {
       dataIndex: 'stock',
       width: 110,
       align: 'right',
-      sorter: (a, b) => a.stock - b.stock,
+      sorter: (a, b) => {
+        const effective = (value: number) => (value === -1 ? Number.MAX_SAFE_INTEGER : value);
+        return effective(a.stock) - effective(b.stock);
+      },
       render: (value: number) => {
+        if (value === -1) {
+          return (
+            <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+              不限
+            </Tag>
+          );
+        }
         if (value === 0) return <span className="stock-empty">缺货</span>;
         if (value < 20) return <span className="stock-low">{value} 份</span>;
         return `${value} 份`;
@@ -388,8 +398,11 @@ export default function DishesPage() {
     const prices = priced.map((sku) => Number(sku.price));
     const min = Math.min(...prices);
     const max = Math.max(...prices);
+    const unlimited = list.some((sku) => Number(sku?.stock) === -1);
     const stock = list.reduce((sum, sku) => sum + (Number(sku?.stock) || 0), 0);
-    return `当前规格售价 ${min === max ? money(min) : `${money(min)} ~ ${money(max)}`} · 库存合计 ${stock} 份`;
+    return `当前规格售价 ${min === max ? money(min) : `${money(min)} ~ ${money(max)}`} · 库存合计 ${
+      unlimited ? '不限' : `${stock} 份`
+    }`;
   })();
 
   return (
@@ -587,7 +600,13 @@ export default function DishesPage() {
                         name={[field.name, 'stock']}
                         rules={[{ required: true, message: '请输入库存' }]}
                       >
-                        <InputNumber min={0} max={9999} precision={0} style={{ width: '100%' }} placeholder="100" />
+                        <InputNumber
+                          min={-1}
+                          max={9999}
+                          precision={0}
+                          style={{ width: '100%' }}
+                          placeholder="100 / -1"
+                        />
                       </Form.Item>
                       <Button
                         type="text"
@@ -618,6 +637,7 @@ export default function DishesPage() {
               )}
             </Form.List>
             {skuSummary && <div className="sku-summary">{skuSummary}</div>}
+            <div className="sku-summary">库存：填 ≥ 0 的整数为实际库存；填 -1 表示无限库存（不限量）</div>
           </div>
 
           <Form.Item
