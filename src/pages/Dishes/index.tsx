@@ -335,7 +335,6 @@ export default function DishesPage() {
           );
         }
         if (value === 0) return <span className="stock-empty">缺货</span>;
-        if (value < 20) return <span className="stock-low">{value} 份</span>;
         return `${value} 份`;
       },
     },

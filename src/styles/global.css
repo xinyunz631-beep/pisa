@@ -238,19 +238,10 @@ body {
   }
 }
 
-/* 菜品库存：低于 20 份提醒、0 份缺货 */
-.stock-low {
-  color: #fa8c16;
-  font-weight: 600;
-}
-
+/* 菜品库存：0 份显示缺货 */
 .stock-empty {
   color: #cf1322;
   font-weight: 600;
-}
-
-[data-theme='dark'] .stock-low {
-  color: #ffc069;
 }
 
 [data-theme='dark'] .stock-empty {
