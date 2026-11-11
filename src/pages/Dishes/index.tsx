@@ -31,7 +31,7 @@ import { dishStatusMeta, money } from '../../utils/format';
 const emptyPage: Paged<Dish> = { list: [], total: 0, page: 1, pageSize: 10 };
 
 export default function DishesPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [form] = Form.useForm<DishInput>();
 
   const [keyword, setKeyword] = useState('');
@@ -75,7 +75,7 @@ export default function DishesPage() {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ status: 'on' });
+    form.setFieldsValue({ status: 'on', stock: 100 });
     setDrawerOpen(true);
   };
 
@@ -87,13 +87,25 @@ export default function DishesPage() {
       category: dish.category,
       price: dish.price,
       cost: dish.cost,
+      stock: dish.stock,
       status: dish.status,
       description: dish.description,
     });
     setDrawerOpen(true);
   };
 
-  const handleSave = async (values: DishInput) => {
+  const confirmOffline = (title: string, onOk: () => Promise<void> | void) => {
+    modal.confirm({
+      title,
+      content: '下架不影响已生成的订单，用户将无法购买此商品，确定要下架吗？',
+      okText: '确定下架',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk,
+    });
+  };
+
+  const doSave = async (values: DishInput) => {
     setSaving(true);
     try {
       await saveDish({ ...values, id: editing?.id });
@@ -107,10 +119,26 @@ export default function DishesPage() {
     }
   };
 
-  const handleToggle = async (dish: Dish, checked: boolean) => {
+  const handleSave = (values: DishInput) => {
+    if (editing && editing.status === 'on' && values.status === 'off') {
+      confirmOffline(`确认下架「${editing.name}」？`, () => doSave(values));
+      return;
+    }
+    void doSave(values);
+  };
+
+  const doToggle = async (dish: Dish, checked: boolean) => {
     await updateDishStatus(dish.id, checked ? 'on' : 'off');
     message.success(`${dish.name} 已${checked ? '上架' : '下架'}`);
     await load();
+  };
+
+  const handleToggle = (dish: Dish, checked: boolean) => {
+    if (checked) {
+      void doToggle(dish, true);
+      return;
+    }
+    confirmOffline(`确认下架「${dish.name}」？`, () => doToggle(dish, false));
   };
 
   const handleRemove = async (dish: Dish) => {
@@ -140,19 +168,15 @@ export default function DishesPage() {
       render: (value: number) => <span style={{ fontWeight: 600 }}>{money(value)}</span>,
     },
     {
-      title: '成本',
-      dataIndex: 'cost',
-      width: 100,
+      title: '库存',
+      dataIndex: 'stock',
+      width: 110,
       align: 'right',
-      render: (value: number) => <span style={{ color: 'var(--text-secondary)' }}>{money(value)}</span>,
-    },
-    {
-      title: '毛利率',
-      width: 100,
-      align: 'right',
-      render: (_, dish) => {
-        const rate = dish.price ? ((dish.price - dish.cost) / dish.price) * 100 : 0;
-        return <span style={{ color: rate >= 60 ? '#389e0d' : '#fa8c16' }}>{rate.toFixed(1)}%</span>;
+      sorter: (a, b) => a.stock - b.stock,
+      render: (value: number) => {
+        if (value === 0) return <span className="stock-empty">缺货</span>;
+        if (value < 20) return <span className="stock-low">{value} 份</span>;
+        return `${value} 份`;
       },
     },
     {
@@ -268,7 +292,7 @@ export default function DishesPage() {
           loading={loading}
           columns={columns}
           dataSource={data.list}
-          scroll={{ x: 1080 }}
+          scroll={{ x: 1020 }}
           pagination={{
             current: page,
             pageSize,
@@ -324,10 +348,19 @@ export default function DishesPage() {
               label="成本（元）"
               rules={[{ required: true, message: '请输入成本' }]}
               style={{ width: 200 }}
+              extra="用于核算毛利，不在列表展示"
             >
               <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="26.00" />
             </Form.Item>
           </Space>
+
+          <Form.Item
+            name="stock"
+            label="库存（份）"
+            rules={[{ required: true, message: '请输入库存' }]}
+          >
+            <InputNumber min={0} max={9999} precision={0} style={{ width: '100%' }} placeholder="100" />
+          </Form.Item>
 
           <Form.Item name="status" label="售卖状态" rules={[{ required: true }]}>
             <Radio.Group

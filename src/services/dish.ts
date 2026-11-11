@@ -45,6 +45,7 @@ export interface DishInput {
   category: string;
   price: number;
   cost: number;
+  stock: number;
   status: DishStatus;
   description?: string;
 }
@@ -67,6 +68,7 @@ export async function saveDish(input: DishInput): Promise<Dish> {
     category: input.category,
     price: input.price,
     cost: input.cost,
+    stock: input.stock,
     status: input.status,
     description: input.description ?? '',
     sales: 0,

@@ -26,6 +26,8 @@ export interface Dish {
   category: string;
   price: number;
   cost: number;
+  /** 当前库存（份）。 */
+  stock: number;
   sales: number;
   status: DishStatus;
   description: string;

@@ -87,6 +87,8 @@ export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, descri
   category,
   price,
   cost,
+  // 库存不消耗随机种子，保证其它模块的 Mock 数据不因新增字段而漂移
+  stock: i === 22 ? 0 : 12 + ((i * 37) % 160),
   sales: Math.round(80 + rng() * 2400),
   status: i === 6 || i === 21 ? 'off' : 'on',
   description,

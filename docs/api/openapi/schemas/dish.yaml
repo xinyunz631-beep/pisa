@@ -4,7 +4,7 @@
 Dish:
   type: object
   description: 菜品
-  required: [id, name, category, price, cost, sales, status, description, updatedAt]
+  required: [id, name, category, price, cost, stock, sales, status, description, updatedAt]
   properties:
     id:
       type: string
@@ -27,8 +27,13 @@ Dish:
     cost:
       type: number
       minimum: 0
-      description: 成本（元）
+      description: 成本（元），仅用于成本/毛利核算，不在列表展示
       example: 26
+    stock:
+      type: integer
+      minimum: 0
+      description: 当前库存（份），0 表示缺货
+      example: 12
     sales:
       type: integer
       minimum: 0
@@ -51,7 +56,7 @@ Dish:
 DishInput:
   type: object
   description: 新增 / 编辑菜品的请求体（新增走 POST，编辑走 PUT，均不传 id）
-  required: [name, category, price, cost, status]
+  required: [name, category, price, cost, stock, status]
   properties:
     name:
       type: string
@@ -74,6 +79,12 @@ DishInput:
       multipleOf: 0.01
       description: 成本（元），最多 2 位小数；建议 cost ≤ price
       example: 10
+    stock:
+      type: integer
+      minimum: 0
+      maximum: 9999
+      description: 库存（份），整数
+      example: 100
     status:
       type: string
       enum: ['on', 'off']
