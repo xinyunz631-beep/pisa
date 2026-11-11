@@ -14,10 +14,15 @@ export interface DishQuery {
 export async function fetchDishes(query: DishQuery = {}): Promise<Paged<Dish>> {
   await sleep(300);
   const { keyword, category, status = 'all', page = 1, pageSize = 10 } = query;
-  const kw = keyword?.trim();
+  const kw = keyword?.trim().toLowerCase();
 
   const filtered = dishes.filter((dish) => {
-    if (kw && !dish.name.includes(kw) && !dish.id.toLowerCase().includes(kw.toLowerCase())) {
+    if (
+      kw &&
+      !dish.name.toLowerCase().includes(kw) &&
+      !dish.id.toLowerCase().includes(kw) &&
+      !dish.code.toLowerCase().includes(kw)
+    ) {
       return false;
     }
     if (category && dish.category !== category) return false;
@@ -26,6 +31,16 @@ export async function fetchDishes(query: DishQuery = {}): Promise<Paged<Dish>> {
   });
 
   return paginate(filtered, page, pageSize);
+}
+
+/** 新增菜品时预填的商品编码（Mock 规则：取现有 SPU 编码最大值 + 1）。 */
+export async function fetchNextDishCode(): Promise<string> {
+  await sleep(60);
+  const max = dishes.reduce((acc, dish) => {
+    const num = Number(dish.code.replace(/\D/g, '')) || 0;
+    return Math.max(acc, num);
+  }, 0);
+  return `SPU${String(max + 1).padStart(3, '0')}`;
 }
 
 export async function fetchCategories(): Promise<string[]> {
@@ -39,15 +54,28 @@ export async function fetchCategories(): Promise<string[]> {
   return [...names, ...extra];
 }
 
+/** 规格（SKU）入参：售价、库存都在规格维度上维护。 */
+export interface DishSkuInput {
+  code: string;
+  specName: string;
+  price: number;
+  stock: number;
+}
+
 export interface DishInput {
   id?: string;
+  /** 商品编码（SPU 编码）。 */
+  code: string;
   name: string;
   category: string;
-  price: number;
+  /** 成本（元），用于对账单成本核算，不在菜品列表展示。 */
   cost: number;
-  stock: number;
   status: DishStatus;
   description?: string;
+  /** 商品图，最多 6 张（dataURL）。 */
+  images?: string[];
+  /** 规格列表，至少 1 条。 */
+  skus: DishSkuInput[];
 }
 
 export async function saveDish(input: DishInput): Promise<Dish> {
@@ -55,23 +83,58 @@ export async function saveDish(input: DishInput): Promise<Dish> {
   const now = new Date();
   const updatedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+  if (!input.skus || input.skus.length === 0) throw new Error('至少需要保留一个规格');
+  if (input.images && input.images.length > 6) throw new Error('商品图最多 6 张');
+
+  const code = input.code.trim().toUpperCase();
+  const duplicated = dishes.find((dish) => dish.id !== input.id && dish.code === code);
+  if (duplicated) throw new Error(`商品编码「${code}」已存在`);
+
+  const dishId = input.id ?? `D${String(dishes.length + 1).padStart(3, '0')}`;
+  const skus = input.skus.map((sku, index) => ({
+    id: `${dishId}-0${index + 1}`,
+    code: sku.code.trim().toUpperCase(),
+    specName: sku.specName.trim(),
+    price: sku.price,
+    stock: sku.stock,
+  }));
+
+  // SPU 的基础价 / 库存由 SKU 汇总推导，保证「列表展示」和「规格明细」永远一致
+  const price = Math.min(...skus.map((sku) => sku.price));
+  const stock = skus.reduce((sum, sku) => sum + sku.stock, 0);
+
   if (input.id) {
-    const target = dishes.find((d) => d.id === input.id);
+    const target = dishes.find((dish) => dish.id === input.id);
     if (!target) throw new Error('菜品不存在');
-    Object.assign(target, { ...input, updatedAt });
+    Object.assign(target, {
+      code,
+      name: input.name.trim(),
+      category: input.category,
+      price,
+      cost: input.cost,
+      stock,
+      images: input.images ?? target.images,
+      skus,
+      status: input.status,
+      description: input.description ?? target.description,
+      updatedAt,
+    });
     return { ...target };
   }
 
   const dish: Dish = {
-    id: `D${String(dishes.length + 1).padStart(3, '0')}`,
-    name: input.name,
+    id: dishId,
+    code,
+    name: input.name.trim(),
     category: input.category,
-    price: input.price,
+    price,
     cost: input.cost,
-    stock: input.stock,
+    stock,
+    images: input.images ?? [],
+    skus,
+    sales: 0,
     status: input.status,
     description: input.description ?? '',
-    sales: 0,
     updatedAt,
   };
   dishes.unshift(dish);
@@ -80,12 +143,12 @@ export async function saveDish(input: DishInput): Promise<Dish> {
 
 export async function updateDishStatus(id: string, status: DishStatus): Promise<void> {
   await sleep(150);
-  const target = dishes.find((d) => d.id === id);
+  const target = dishes.find((dish) => dish.id === id);
   if (target) target.status = status;
 }
 
 export async function removeDish(id: string): Promise<void> {
   await sleep(200);
-  const index = dishes.findIndex((d) => d.id === id);
+  const index = dishes.findIndex((dish) => dish.id === id);
   if (index >= 0) dishes.splice(index, 1);
 }

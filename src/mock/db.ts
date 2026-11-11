@@ -1,4 +1,4 @@
-import type { Dish, Order, OrderItem, OrderStatus, Store } from '../types';
+import type { Dish, DishSku, Order, OrderItem, OrderStatus, Store } from '../types';
 import { mulberry32, pad, pick } from './util';
 
 /**
@@ -81,19 +81,71 @@ const dishSeed: Array<[string, string, number, number, string]> = [
   ['柠檬水', '饮品', 10, 2, '鲜柠檬片，微酸解腻'],
 ];
 
-export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, description], i) => ({
-  id: `D${String(i + 1).padStart(3, '0')}`,
-  name,
-  category,
-  price,
-  cost,
+const IMAGE_PALETTE = ['#c1440e', '#d46b08', '#ad6800', '#5b8c00', '#08979c', '#1d39c4', '#531dab', '#c41d7f'];
+
+/** 商品图占位：内联 SVG，原型阶段不依赖外部图片资源。 */
+function dishImage(name: string, color: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320"><rect width="320" height="320" rx="18" fill="${color}"/><text x="160" y="170" font-size="28" fill="#ffffff" text-anchor="middle" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif">${name}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * 按分类生成 SKU：一个菜品（SPU）至少 1 个规格。
+ * 招牌主菜 / 小炒 / 凉菜 → 小份 / 大份，饮品 → 中杯 / 大杯，其余为单一「标准份」。
+ * 首个规格沿用菜品基础价，保证订单、对账单等下游 Mock 数据口径不变。
+ */
+function buildSkus(dishId: string, index: number, category: string, price: number, stock: number): DishSku[] {
+  const code = `SPU${String(index + 1).padStart(3, '0')}`;
+  const multi =
+    category === '饮品'
+      ? 'drink'
+      : category === '招牌主菜' || category === '小炒' || category === '凉菜'
+        ? 'main'
+        : 'single';
+
+  if (multi === 'single') {
+    return [{ id: `${dishId}-01`, code: `${code}-01`, specName: '标准份', price, stock }];
+  }
+
+  const firstStock = Math.round(stock * 0.6);
+  const specs =
+    multi === 'drink'
+      ? [{ specName: '中杯', delta: 0 }, { specName: '大杯', delta: 6 }]
+      : [{ specName: '小份', delta: 0 }, { specName: '大份', delta: 12 }];
+
+  return specs.map((spec, i) => ({
+    id: `${dishId}-0${i + 1}`,
+    code: `${code}-0${i + 1}`,
+    specName: spec.specName,
+    price: price + spec.delta,
+    stock: i === 0 ? firstStock : stock - firstStock,
+  }));
+}
+
+export const dishes: Dish[] = dishSeed.map(([name, category, price, cost, description], i) => {
+  const id = `D${String(i + 1).padStart(3, '0')}`;
   // 库存不消耗随机种子，保证其它模块的 Mock 数据不因新增字段而漂移
-  stock: i === 22 ? 0 : 12 + ((i * 37) % 160),
-  sales: Math.round(80 + rng() * 2400),
-  status: i === 6 || i === 21 ? 'off' : 'on',
-  description,
-  updatedAt: dateTime(1 + (i % 4), 9 + (i % 10), (i * 7) % 60),
-}));
+  const baseStock = i === 22 ? 0 : 12 + ((i * 37) % 160);
+  const skus = buildSkus(id, i, category, price, baseStock);
+
+  return {
+    id,
+    code: `SPU${String(i + 1).padStart(3, '0')}`,
+    name,
+    category,
+    // SPU 基础价 = 最低 SKU 价（本 Mock 里首个规格沿用原价，所以与历史数据一致）
+    price: Math.min(...skus.map((sku) => sku.price)),
+    cost,
+    // SPU 库存 = 各 SKU 库存合计
+    stock: skus.reduce((sum, sku) => sum + sku.stock, 0),
+    images: [dishImage(name, IMAGE_PALETTE[i % IMAGE_PALETTE.length])],
+    skus,
+    sales: Math.round(80 + rng() * 2400),
+    status: i === 6 || i === 21 ? 'off' : 'on',
+    description,
+    updatedAt: dateTime(1 + (i % 4), 9 + (i % 10), (i * 7) % 60),
+  };
+});
 
 const customerSeed = [
   '张伟',

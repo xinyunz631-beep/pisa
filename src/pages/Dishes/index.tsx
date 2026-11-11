@@ -14,12 +14,15 @@ import {
   Switch,
   Table,
   Tag,
+  Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import {
   fetchCategories,
   fetchDishes,
+  fetchNextDishCode,
   removeDish,
   saveDish,
   updateDishStatus,
@@ -29,10 +32,30 @@ import type { Dish, DishStatus, Paged } from '../../types';
 import { dishStatusMeta, money } from '../../utils/format';
 
 const emptyPage: Paged<Dish> = { list: [], total: 0, page: 1, pageSize: 10 };
+const MAX_IMAGES = 6;
 
+interface DishSkuFormValues {
+  code: string;
+  specName: string;
+  price?: number;
+  stock?: number;
+}
+
+interface DishFormValues {
+  code: string;
+  name: string;
+  category: string;
+  cost: number;
+  status: DishStatus;
+  description?: string;
+  skus: DishSkuFormValues[];
+}
+
+/** 菜品管理：SPU（菜品）+ SKU（规格）模型，支持商品编码、商品图与多规格。 */
 export default function DishesPage() {
   const { message, modal } = App.useApp();
-  const [form] = Form.useForm<DishInput>();
+  const [form] = Form.useForm<DishFormValues>();
+  const skuWatch = Form.useWatch('skus', form);
 
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<string>();
@@ -47,6 +70,7 @@ export default function DishesPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Dish | null>(null);
   const [saving, setSaving] = useState(false);
+  const [imageList, setImageList] = useState<UploadFile[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,10 +96,16 @@ export default function DishesPage() {
     setPage(1);
   };
 
-  const openCreate = () => {
+  const openCreate = async () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ status: 'on', stock: 100 });
+    setImageList([]);
+    const code = await fetchNextDishCode();
+    form.setFieldsValue({
+      code,
+      status: 'on',
+      skus: [{ specName: '标准份', code: `${code}-01`, stock: 100 }],
+    });
     setDrawerOpen(true);
   };
 
@@ -83,15 +113,49 @@ export default function DishesPage() {
     setEditing(dish);
     form.resetFields();
     form.setFieldsValue({
+      code: dish.code,
       name: dish.name,
       category: dish.category,
-      price: dish.price,
       cost: dish.cost,
-      stock: dish.stock,
       status: dish.status,
       description: dish.description,
+      skus: dish.skus.map((sku) => ({
+        code: sku.code,
+        specName: sku.specName,
+        price: sku.price,
+        stock: sku.stock,
+      })),
     });
+    setImageList(
+      dish.images.map((url, index) => ({
+        uid: `${dish.id}-img-${index}`,
+        name: `商品图 ${index + 1}`,
+        status: 'done' as const,
+        url,
+      })),
+    );
     setDrawerOpen(true);
+  };
+
+  const handleUpload = (file: RcFile) => {
+    if (!file.type.startsWith('image/')) {
+      message.warning('只能上传图片文件');
+      return Upload.LIST_IGNORE;
+    }
+    if (imageList.length >= MAX_IMAGES) {
+      message.warning(`商品图最多 ${MAX_IMAGES} 张`);
+      return Upload.LIST_IGNORE;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = typeof reader.result === 'string' ? reader.result : '';
+      if (!url) return;
+      setImageList((prev) =>
+        [...prev, { uid: file.uid, name: file.name, status: 'done' as const, url }].slice(0, MAX_IMAGES),
+      );
+    };
+    reader.readAsDataURL(file);
+    return Upload.LIST_IGNORE;
   };
 
   const confirmOffline = (title: string, onOk: () => Promise<void> | void) => {
@@ -105,10 +169,26 @@ export default function DishesPage() {
     });
   };
 
-  const doSave = async (values: DishInput) => {
+  const doSave = async (values: DishFormValues) => {
     setSaving(true);
     try {
-      await saveDish({ ...values, id: editing?.id });
+      const payload: DishInput = {
+        id: editing?.id,
+        code: values.code,
+        name: values.name,
+        category: values.category,
+        cost: values.cost,
+        status: values.status,
+        description: values.description,
+        images: imageList.map((file) => file.url).filter((url): url is string => Boolean(url)),
+        skus: values.skus.map((sku) => ({
+          code: sku.code,
+          specName: sku.specName,
+          price: Number(sku.price),
+          stock: Number(sku.stock),
+        })),
+      };
+      await saveDish(payload);
       message.success(editing ? '菜品已更新' : '菜品已新增');
       setDrawerOpen(false);
       await load();
@@ -119,7 +199,7 @@ export default function DishesPage() {
     }
   };
 
-  const handleSave = (values: DishInput) => {
+  const handleSave = (values: DishFormValues) => {
     if (editing && editing.status === 'on' && values.status === 'off') {
       confirmOffline(`确认下架「${editing.name}」？`, () => doSave(values));
       return;
@@ -151,11 +231,13 @@ export default function DishesPage() {
     {
       title: '菜品',
       dataIndex: 'name',
-      width: 200,
+      width: 220,
       render: (value: string, dish) => (
         <div>
           <div style={{ fontWeight: 500 }}>{value}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{dish.id}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            {dish.id} · {dish.code}
+          </div>
         </div>
       ),
     },
@@ -163,9 +245,23 @@ export default function DishesPage() {
     {
       title: '售价',
       dataIndex: 'price',
-      width: 100,
+      width: 140,
       align: 'right',
-      render: (value: number) => <span style={{ fontWeight: 600 }}>{money(value)}</span>,
+      render: (value: number, dish) => {
+        const prices = dish.skus.map((sku) => sku.price);
+        const min = Math.min(value, ...prices);
+        const max = Math.max(value, ...prices);
+        return (
+          <div>
+            <span style={{ fontWeight: 600 }}>
+              {min === max ? money(min) : `${money(min)} ~ ${money(max)}`}
+            </span>
+            {dish.skus.length > 1 && (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{dish.skus.length} 个规格</div>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: '库存',
@@ -195,7 +291,7 @@ export default function DishesPage() {
           <Switch
             size="small"
             checked={value === 'on'}
-            onChange={(checked) => void handleToggle(dish, checked)}
+            onChange={(checked) => handleToggle(dish, checked)}
           />
           <Tag color={dishStatusMeta[value].color} style={{ marginInlineEnd: 0 }}>
             {dishStatusMeta[value].label}
@@ -231,18 +327,29 @@ export default function DishesPage() {
     },
   ];
 
+  const skuSummary = (() => {
+    const list = (skuWatch ?? []) as DishSkuFormValues[];
+    const priced = list.filter((sku) => typeof sku?.price === 'number');
+    if (!priced.length) return '';
+    const prices = priced.map((sku) => Number(sku.price));
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const stock = list.reduce((sum, sku) => sum + (Number(sku?.stock) || 0), 0);
+    return `当前规格售价 ${min === max ? money(min) : `${money(min)} ~ ${money(max)}`} · 库存合计 ${stock} 份`;
+  })();
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h2>菜品管理</h2>
-          <p>共 {data.total} 道菜，支持按名称 / 分类 / 状态筛选（Mock 数据）</p>
+          <p>共 {data.total} 道菜，支持按名称 / 编码 / 分类 / 状态筛选（Mock 数据）</p>
         </div>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             刷新
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => void openCreate()}>
             新增菜品
           </Button>
         </Space>
@@ -292,7 +399,7 @@ export default function DishesPage() {
           loading={loading}
           columns={columns}
           dataSource={data.list}
-          scroll={{ x: 1020 }}
+          scroll={{ x: 1080 }}
           pagination={{
             current: page,
             pageSize,
@@ -308,8 +415,8 @@ export default function DishesPage() {
       </Card>
 
       <Drawer
-        title={editing ? `编辑菜品 · ${editing.name}` : '新增菜品'}
-        width={440}
+        title={editing ? '编辑菜品' : '新增菜品'}
+        width={680}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
@@ -322,44 +429,151 @@ export default function DishesPage() {
           </Space>
         }
       >
-        <Form<DishInput> id="dish-form" form={form} layout="vertical" onFinish={(values) => void handleSave(values)}>
+        <Form<DishFormValues>
+          id="dish-form"
+          form={form}
+          layout="vertical"
+          onFinish={(values) => handleSave(values)}
+        >
           <Form.Item name="name" label="菜品名称" rules={[{ required: true, message: '请输入菜品名称' }]}>
             <Input placeholder="如：麻辣香锅" maxLength={30} />
           </Form.Item>
 
-          <Form.Item name="category" label="所属分类" rules={[{ required: true, message: '请选择分类' }]}>
-            <Select
-              placeholder="选择分类"
-              options={categories.map((item) => ({ label: item, value: item }))}
-            />
-          </Form.Item>
-
-          <Space size={12} align="start">
+          <Space size={12} align="start" style={{ display: 'flex' }}>
             <Form.Item
-              name="price"
-              label="售价（元）"
-              rules={[{ required: true, message: '请输入售价' }]}
-              style={{ width: 200 }}
+              name="code"
+              label="商品编码"
+              rules={[
+                { required: true, message: '请输入商品编码' },
+                { pattern: /^[A-Za-z][A-Za-z0-9_-]*$/, message: '以字母开头，只能包含字母、数字、下划线、中划线' },
+              ]}
+              style={{ width: 300 }}
             >
-              <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="68.00" />
+              <Input placeholder="如：SPU029" maxLength={30} />
             </Form.Item>
             <Form.Item
-              name="cost"
-              label="成本（元）"
-              rules={[{ required: true, message: '请输入成本' }]}
-              style={{ width: 200 }}
-              extra="用于核算毛利，不在列表展示"
+              name="category"
+              label="所属分类"
+              rules={[{ required: true, message: '请选择分类' }]}
+              style={{ width: 300 }}
             >
-              <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="26.00" />
+              <Select
+                placeholder="选择分类"
+                options={categories.map((item) => ({ label: item, value: item }))}
+              />
             </Form.Item>
           </Space>
 
+          <Form.Item label="商品图（最多 6 张）" extra="支持 jpg / png；原型阶段图片仅保存在内存，刷新后恢复初始图">
+            <Upload
+              listType="picture-card"
+              accept="image/*"
+              multiple
+              fileList={imageList}
+              beforeUpload={handleUpload}
+              onRemove={(file) => {
+                setImageList((prev) => prev.filter((item) => item.uid !== file.uid));
+              }}
+              onPreview={(file) => {
+                if (file.url) window.open(file.url, '_blank');
+              }}
+            >
+              {imageList.length >= MAX_IMAGES ? null : (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 4 }}>上传</div>
+                </div>
+              )}
+            </Upload>
+          </Form.Item>
+
+          <div className="sku-editor">
+            <div className="sku-head">
+              <span>规格名称</span>
+              <span>规格编码</span>
+              <span>售价（元）</span>
+              <span>库存</span>
+              <span />
+            </div>
+            <Form.List
+              name="skus"
+              rules={[
+                {
+                  validator: async (_, value) => {
+                    if (!value || value.length === 0) {
+                      return Promise.reject(new Error('至少保留一个规格'));
+                    }
+                  },
+                },
+              ]}
+            >
+              {(fields, { add, remove }, { errors }) => (
+                <>
+                  {fields.map((field) => (
+                    <div className="sku-row" key={field.key}>
+                      <Form.Item
+                        name={[field.name, 'specName']}
+                        rules={[{ required: true, message: '请输入规格名' }]}
+                      >
+                        <Input placeholder="如：小份" maxLength={20} />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, 'code']}
+                        rules={[{ required: true, message: '请输入规格编码' }]}
+                      >
+                        <Input placeholder="如：SPU001-01" maxLength={30} />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, 'price']}
+                        rules={[{ required: true, message: '请输入售价' }]}
+                      >
+                        <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="68.00" />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, 'stock']}
+                        rules={[{ required: true, message: '请输入库存' }]}
+                      >
+                        <InputNumber min={0} max={9999} precision={0} style={{ width: '100%' }} placeholder="100" />
+                      </Form.Item>
+                      <Button
+                        type="text"
+                        danger
+                        disabled={fields.length <= 1}
+                        onClick={() => remove(field.name)}
+                      >
+                        删除
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="dashed"
+                    block
+                    icon={<PlusOutlined />}
+                    onClick={() =>
+                      add({
+                        specName: '',
+                        code: `${form.getFieldValue('code') || 'SPU'}-0${fields.length + 1}`,
+                        stock: 100,
+                      })
+                    }
+                  >
+                    添加规格
+                  </Button>
+                  <Form.ErrorList errors={errors} />
+                </>
+              )}
+            </Form.List>
+            {skuSummary && <div className="sku-summary">{skuSummary}</div>}
+          </div>
+
           <Form.Item
-            name="stock"
-            label="库存（份）"
-            rules={[{ required: true, message: '请输入库存' }]}
+            name="cost"
+            label="成本（元）"
+            rules={[{ required: true, message: '请输入成本' }]}
+            extra="用于核算毛利，不在列表展示"
+            style={{ marginTop: 16 }}
           >
-            <InputNumber min={0} max={9999} precision={0} style={{ width: '100%' }} placeholder="100" />
+            <InputNumber min={0} precision={2} style={{ width: 200 }} placeholder="26.00" />
           </Form.Item>
 
           <Form.Item name="status" label="售卖状态" rules={[{ required: true }]}>

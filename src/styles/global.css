@@ -256,3 +256,32 @@ body {
 [data-theme='dark'] .stock-empty {
   color: #ff7875;
 }
+
+/* 菜品规格（SKU）编辑器：表头 + 每行 4 个字段 + 删除 */
+.sku-editor .sku-head,
+.sku-editor .sku-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr 0.8fr 0.6fr 44px;
+  gap: 8px;
+  align-items: start;
+}
+
+.sku-editor .sku-head {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.sku-editor .sku-row .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.sku-editor .sku-row .ant-form-item-explain {
+  font-size: 12px;
+}
+
+.sku-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}

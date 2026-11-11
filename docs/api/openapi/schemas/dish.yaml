@@ -4,12 +4,16 @@
 Dish:
   type: object
   description: 菜品
-  required: [id, name, category, price, cost, stock, sales, status, description, updatedAt]
+  required: [id, code, name, category, price, cost, stock, images, skus, sales, status, description, updatedAt]
   properties:
     id:
       type: string
-      description: 菜品编号，D + 3 位序号；新增时由服务端生成
+      description: 系统菜品编号，D + 3 位序号；新增时由服务端生成
       example: D001
+    code:
+      type: string
+      description: 商品编码（SPU 编码），全局唯一
+      example: SPU001
     name:
       type: string
       maxLength: 30
@@ -32,8 +36,21 @@ Dish:
     stock:
       type: integer
       minimum: 0
-      description: 当前库存（份），0 表示缺货
+      description: 当前库存（份）= 全部 SKU 库存合计，0 表示缺货
       example: 12
+    images:
+      type: array
+      maxItems: 6
+      description: 商品图（URL），最多 6 张；Mock 为内联 SVG dataURL
+      items:
+        type: string
+      example: ['data:image/svg+xml;charset=utf-8,…']
+    skus:
+      type: array
+      minItems: 1
+      description: 规格（SKU）列表，至少 1 条；SPU 的 price/stock 由它汇总
+      items:
+        $ref: '#/DishSku'
     sales:
       type: integer
       minimum: 0
@@ -55,9 +72,13 @@ Dish:
 
 DishInput:
   type: object
-  description: 新增 / 编辑菜品的请求体（新增走 POST，编辑走 PUT，均不传 id）
-  required: [name, category, price, cost, stock, status]
+  description: 新增 / 编辑菜品的请求体（SPU + SKU；新增走 POST，编辑走 PUT，均不传 id）
+  required: [code, name, category, cost, skus, status]
   properties:
+    code:
+      type: string
+      description: 商品编码（SPU），全局唯一，如 SPU029
+      example: SPU029
     name:
       type: string
       minLength: 1
@@ -67,24 +88,24 @@ DishInput:
       type: string
       description: 分类名称，须存在于分类字典
       example: 小炒
-    price:
-      type: number
-      minimum: 0
-      multipleOf: 0.01
-      description: 售价（元），最多 2 位小数
-      example: 28
     cost:
       type: number
       minimum: 0
       multipleOf: 0.01
-      description: 成本（元），最多 2 位小数；建议 cost ≤ price
+      description: 成本（元），最多 2 位小数；用于对账单成本核算
       example: 10
-    stock:
-      type: integer
-      minimum: 0
-      maximum: 9999
-      description: 库存（份），整数
-      example: 100
+    images:
+      type: array
+      maxItems: 6
+      description: 商品图（URL / dataURL），最多 6 张
+      items:
+        type: string
+    skus:
+      type: array
+      minItems: 1
+      description: 规格列表，至少 1 条
+      items:
+        $ref: '#/DishSkuInput'
     status:
       type: string
       enum: ['on', 'off']
@@ -94,6 +115,60 @@ DishInput:
       maxLength: 120
       description: 菜品描述，缺省保存为空串
       example: 现炒蒜香，清爽解腻
+
+DishSku:
+  type: object
+  description: 商品规格（SKU）
+  required: [id, code, specName, price, stock]
+  properties:
+    id:
+      type: string
+      description: SKU 系统编号，{菜品id}-序号，如 D001-01
+      example: D001-01
+    code:
+      type: string
+      description: SKU 编码，建议同一 SPU 内唯一
+      example: SPU001-01
+    specName:
+      type: string
+      description: 规格名称
+      example: 小份
+    price:
+      type: number
+      minimum: 0
+      description: 该规格售价（元）
+      example: 68
+    stock:
+      type: integer
+      minimum: 0
+      description: 该规格库存（份）
+      example: 7
+
+DishSkuInput:
+  type: object
+  description: 规格入参（新增 / 编辑菜品时提交）
+  required: [code, specName, price, stock]
+  properties:
+    code:
+      type: string
+      description: SKU 编码
+      example: SPU029-01
+    specName:
+      type: string
+      description: 规格名称
+      example: 标准份
+    price:
+      type: number
+      minimum: 0
+      multipleOf: 0.01
+      description: 售价（元），最多 2 位小数
+      example: 28
+    stock:
+      type: integer
+      minimum: 0
+      maximum: 9999
+      description: 库存（份）
+      example: 100
 
 PagedDishes:
   allOf:

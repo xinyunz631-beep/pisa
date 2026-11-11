@@ -20,14 +20,32 @@ export interface Store {
 
 export type DishStatus = 'on' | 'off';
 
+/** 商品规格（SKU）：一个菜品（SPU）下可以有多个规格，各自独立售价与库存。 */
+export interface DishSku {
+  id: string;
+  /** SKU 编码，如 SPU001-01。 */
+  code: string;
+  /** 规格名称，如「小份」「大杯」。 */
+  specName: string;
+  price: number;
+  stock: number;
+}
+
 export interface Dish {
   id: string;
+  /** 商品编码（SPU 编码），商家可自定义。 */
+  code: string;
   name: string;
   category: string;
+  /** 基础售价 = 全部 SKU 中的最低价（订单快照、对账单按它计算）。 */
   price: number;
   cost: number;
-  /** 当前库存（份）。 */
+  /** 当前库存 = 全部 SKU 库存合计。 */
   stock: number;
+  /** 商品图，最多 6 张；Mock 用内联 SVG 占位。 */
+  images: string[];
+  /** 规格（SKU）列表，至少 1 条。 */
+  skus: DishSku[];
   sales: number;
   status: DishStatus;
   description: string;
