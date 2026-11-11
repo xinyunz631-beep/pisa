@@ -325,9 +325,13 @@ body {
 .attr-binding-head,
 .attr-binding-row {
   display: grid;
-  grid-template-columns: 1fr 170px 90px;
+  grid-template-columns: minmax(0, 1fr) 160px 64px;
   gap: 8px;
   align-items: center;
+}
+
+.attr-binding-row .ant-switch {
+  justify-self: start;
 }
 
 .attr-binding-head {

@@ -182,7 +182,7 @@ DishSkuInput:
 
 DishAttributeBinding:
   type: object
-  description: 商品对属性组的引用配置（加价可在商品级覆盖）
+  description: 商品对属性组的引用配置。属性组选项设置默认加价；商品引用时可重新设置本商品加价，未设置则取默认值
   required: [groupId]
   properties:
     groupId:
@@ -198,7 +198,7 @@ DishAttributeBinding:
       additionalProperties:
         type: number
         minimum: 0
-      description: 本商品选项加价覆盖（key 为选项 ID）；未覆盖的选项继承属性组默认加价
+      description: 本商品选项加价覆盖（key 为选项 ID）。未出现的选项取属性组默认加价；显式设置为 0 表示本商品免费
       example: { A004-O1: 0 }
     disabledOptionIds:
       type: array

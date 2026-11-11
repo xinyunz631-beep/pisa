@@ -693,6 +693,7 @@ export default function DishesPage() {
                                   }
                                 />
                                 <Switch
+                                  size="small"
                                   checked={!disabled}
                                   onChange={(checked) => setOptionProvided(group.id, option.id, checked)}
                                 />
