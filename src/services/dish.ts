@@ -46,7 +46,7 @@ export async function fetchNextDishCode(): Promise<string> {
 
 export async function fetchCategories(): Promise<string[]> {
   await sleep(80);
-  // 与「业务 · 分类管理」保持一致：只返回启用中的分类（默认顺序即分类排序）
+  // 与「业务 · 菜品分类」保持一致：只返回启用中的分类（默认顺序即分类排序）
   const names = enabledCategoryNames();
   // 兼容历史数据：菜品上存在但分类表里没有的名称也一并返回，避免筛选漏项
   const extra = [...new Set(dishes.map((dish) => dish.category))].filter(

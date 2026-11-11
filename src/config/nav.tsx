@@ -161,13 +161,13 @@ export const modules: NavModule[] = [
       { path: '/business/dishes', label: '菜品管理', icon: <CoffeeOutlined />, component: DishesPage },
       {
         path: '/business/categories',
-        label: '分类管理',
+        label: '菜品分类',
         icon: <FolderOpenOutlined />,
         component: CategoriesPage,
       },
       {
         path: '/business/attributes',
-        label: '做法属性',
+        label: '菜品属性',
         icon: <ControlOutlined />,
         component: AttributesPage,
       },

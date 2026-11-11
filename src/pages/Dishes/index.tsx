@@ -642,12 +642,12 @@ export default function DishesPage() {
 
           <Form.Item
             label="口味 / 做法"
-            extra="在「业务 · 做法属性」统一维护；勾选后可按本商品覆盖选项加价（留空继承属性组默认价），点单时按订单快照记录，不参与售价与库存"
+            extra="在「业务 · 菜品属性」统一维护；勾选后可按本商品覆盖选项加价（留空继承属性组默认价），点单时按订单快照记录，不参与售价与库存"
             style={{ marginTop: 16 }}
           >
             {attributeGroups.length === 0 ? (
               <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                还没有启用中的属性组，去「业务 · 做法属性」创建
+                还没有启用中的属性组，去「业务 · 菜品属性」创建
               </span>
             ) : (
               <Space direction="vertical" size={10} style={{ width: '100%' }}>

@@ -48,7 +48,7 @@ interface CategoryFormValues {
   remark?: string;
 }
 
-/** 分类管理：菜品分类的新增、编辑、启停与删除（业务模块）。 */
+/** 菜品分类：分类的新增、编辑、启停与删除（业务模块）。 */
 export default function CategoriesPage() {
   const { message } = App.useApp();
   const [form] = Form.useForm<CategoryFormValues>();
@@ -256,7 +256,7 @@ export default function CategoriesPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>分类管理</h2>
+          <h2>菜品分类</h2>
           <p>共 {data.total} 个菜品分类，支持按名称 / 编码 / 状态筛选；分类改名会同步更新菜品归属（Mock 数据）</p>
         </div>
         <Space>

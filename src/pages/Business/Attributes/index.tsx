@@ -61,7 +61,7 @@ interface AttributeFormValues {
   options: AttributeOptionFormValues[];
 }
 
-/** 做法属性：属性组（辣度 / 温度 / 忌口 / 加料…）的集中维护，菜品只做引用。 */
+/** 菜品属性：做法 / 口味属性组（辣度 / 温度 / 忌口 / 加料…）的集中维护，菜品只做引用。 */
 export default function AttributesPage() {
   const { message } = App.useApp();
   const [form] = Form.useForm<AttributeFormValues>();
@@ -295,7 +295,7 @@ export default function AttributesPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h2>做法属性</h2>
+          <h2>菜品属性</h2>
           <p>
             属性组（辣度 / 温度 / 忌口 / 加料…）集中维护，选项加价为「默认加价」；菜品引用后可按本商品覆盖加价，属性不参与售价与库存，点单时按快照记录（Mock 数据）
           </p>
